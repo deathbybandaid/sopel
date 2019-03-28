@@ -142,7 +142,15 @@ class SopelDB(object):
     def adjust_nick_value(self, nick, key, value):
         """Adjusts the value for a given key to be associated with the nick."""
         nick = Identifier(nick)
-        current_value = self.get_nick_value(self, nick, key)
+        result = self.execute(
+            'SELECT value FROM nicknames JOIN nick_values '
+            'ON nicknames.nick_id = nick_values.nick_id '
+            'WHERE slug = ? AND key = ?',
+            [nick.lower(), key]
+        ).fetchone()
+        if result is not None:
+            result = result[0]
+        current_value = _deserialize(result)
         value = current_value + value
         value = json.dumps(value, ensure_ascii=False)
         nick_id = self.get_nick_id(nick)
@@ -223,7 +231,13 @@ class SopelDB(object):
     def adjust_channel_value(self, channel, key, value):
         """Adjusts the value for a given key to be associated with the channel."""
         channel = Identifier(channel).lower()
-        current_value = self.get_channel_value(self, channel, key)
+        result = self.execute(
+            'SELECT value FROM channel_values WHERE channel = ? AND key = ?',
+            [channel, key]
+        ).fetchone()
+        if result is not None:
+            result = result[0]
+        current_value = _deserialize(result)
         value = current_value + value
         value = json.dumps(value, ensure_ascii=False)
         self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
