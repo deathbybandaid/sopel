@@ -304,7 +304,6 @@ class Sopel(irc.Bot):
         if not isinstance(recipients, list):
             recipients = [recipients]
         for recipient in recipients:
-            self.write(('PRIVMSG', 'deathbybandaid'), str(recipient))
 
             try:
                 self.sending.acquire()
