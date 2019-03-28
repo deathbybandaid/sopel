@@ -142,10 +142,10 @@ class SopelDB(object):
     def reset_nick_value(self, nick, key):
         """Resets the value for a given key to be associated with the nick."""
         nick = Identifier(nick)
-        value = json.dumps(value, ensure_ascii=False)
+        value = json.dumps(None, ensure_ascii=False)
         nick_id = self.get_nick_id(nick)
         self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
-                     [nick_id, key, None])
+                     [nick_id, key, value])
 
     def get_nick_value(self, nick, key):
         """Retrieves the value for a given key associated with a nick."""
@@ -213,9 +213,9 @@ class SopelDB(object):
     def reset_channel_value(self, channel, key):
         """Resets the value for a given key to be associated with a channel."""
         channel = Identifier(channel).lower()
-        value = json.dumps(value, ensure_ascii=False)
+        value = json.dumps(None, ensure_ascii=False)
         self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
-                     [channel, key, None])
+                     [channel, key, value])
 
     def get_channel_value(self, channel, key):
         """Retrieves the value for a given key associated with a channel."""
