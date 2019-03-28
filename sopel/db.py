@@ -139,6 +139,16 @@ class SopelDB(object):
         self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
                      [nick_id, key, value])
 
+    def adjust_nick_value(self, nick, key, value):
+        """Adjusts the value for a given key to be associated with the nick."""
+        nick = Identifier(nick)
+        current_value = self.get_nick_value(self, nick, key)
+        value = current_value + value
+        value = json.dumps(value, ensure_ascii=False)
+        nick_id = self.get_nick_id(nick)
+        self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
+                     [nick_id, key, value])
+
     def reset_nick_value(self, nick, key):
         """Resets the value for a given key to be associated with the nick."""
         nick = Identifier(nick)
@@ -206,6 +216,15 @@ class SopelDB(object):
     def set_channel_value(self, channel, key, value):
         """Sets the value for a given key to be associated with the channel."""
         channel = Identifier(channel).lower()
+        value = json.dumps(value, ensure_ascii=False)
+        self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
+                     [channel, key, value])
+
+    def adjust_channel_value(self, channel, key, value):
+        """Adjusts the value for a given key to be associated with the channel."""
+        channel = Identifier(channel).lower()
+        current_value = self.get_channel_value(self, channel, key)
+        value = current_value + value
         value = json.dumps(value, ensure_ascii=False)
         self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
                      [channel, key, value])
