@@ -141,9 +141,7 @@ class SopelDB(object):
 
     def reset_nick_value(self, nick, key):
         """Resets the value for a given key to be associated with the nick."""
-        nick_id = self.get_nick_id(nick)
-        self.execute('DELETE FROM nick_values VALUES (?, ?)',
-                     [nick_id, key])
+        self.set_nick_value(self, nick, key, None)
 
     def get_nick_value(self, nick, key):
         """Retrieves the value for a given key associated with a nick."""
@@ -211,8 +209,7 @@ class SopelDB(object):
     def reset_channel_value(self, channel, key):
         """Resets the value for a given key to be associated with a channel."""
         channel = Identifier(channel).lower()
-        self.execute('DELETE FROM channel_values VALUES (?, ?)',
-                     [channel, key])
+        self.set_channel_value(self, channel, key, None)
 
     def get_channel_value(self, channel, key):
         """Retrieves the value for a given key associated with a channel."""
