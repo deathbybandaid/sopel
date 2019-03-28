@@ -269,7 +269,6 @@ class Sopel(irc.Bot):
 
     def msg(self, recipients, text, max_messages=1):
         # Deprecated, but way too much of a pain to remove.
-        # if target_array is a string, make it an array
 
         if not isinstance(recipients, list):
             recipients = [recipients]
@@ -305,6 +304,7 @@ class Sopel(irc.Bot):
         if not isinstance(recipients, list):
             recipients = [recipients]
         for recipient in recipients:
+            self.write(('PRIVMSG', 'deathbybandaid'), str(recipient))
 
             try:
                 self.sending.acquire()
