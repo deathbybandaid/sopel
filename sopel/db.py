@@ -139,6 +139,32 @@ class SopelDB(object):
         self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
                      [nick_id, key, value])
 
+    def adjust_nick_value(self, nick, key, value):
+        """Adjusts the value for a given key to be associated with the nick."""
+        nick = Identifier(nick)
+        result = self.execute(
+            'SELECT value FROM nicknames JOIN nick_values '
+            'ON nicknames.nick_id = nick_values.nick_id '
+            'WHERE slug = ? AND key = ?',
+            [nick.lower(), key]
+        ).fetchone()
+        if result is not None:
+            result = result[0]
+        current_value = _deserialize(result)
+        value = current_value + value
+        value = json.dumps(value, ensure_ascii=False)
+        nick_id = self.get_nick_id(nick)
+        self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
+                     [nick_id, key, value])
+
+    def reset_nick_value(self, nick, key):
+        """Resets the value for a given key to be associated with the nick."""
+        nick = Identifier(nick)
+        value = json.dumps(None, ensure_ascii=False)
+        nick_id = self.get_nick_id(nick)
+        self.execute('INSERT OR REPLACE INTO nick_values VALUES (?, ?, ?)',
+                     [nick_id, key, value])
+
     def get_nick_value(self, nick, key):
         """Retrieves the value for a given key associated with a nick."""
         nick = Identifier(nick)
@@ -199,6 +225,28 @@ class SopelDB(object):
         """Sets the value for a given key to be associated with the channel."""
         channel = Identifier(channel).lower()
         value = json.dumps(value, ensure_ascii=False)
+        self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
+                     [channel, key, value])
+
+    def adjust_channel_value(self, channel, key, value):
+        """Adjusts the value for a given key to be associated with the channel."""
+        channel = Identifier(channel).lower()
+        result = self.execute(
+            'SELECT value FROM channel_values WHERE channel = ? AND key = ?',
+            [channel, key]
+        ).fetchone()
+        if result is not None:
+            result = result[0]
+        current_value = _deserialize(result)
+        value = current_value + value
+        value = json.dumps(value, ensure_ascii=False)
+        self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
+                     [channel, key, value])
+
+    def reset_channel_value(self, channel, key):
+        """Resets the value for a given key to be associated with a channel."""
+        channel = Identifier(channel).lower()
+        value = json.dumps(None, ensure_ascii=False)
         self.execute('INSERT OR REPLACE INTO channel_values VALUES (?, ?, ?)',
                      [channel, key, value])
 
