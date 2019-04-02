@@ -269,83 +269,193 @@ class Sopel(irc.Bot):
 
     def msg(self, recipient, text, max_messages=1):
         # Deprecated, but way too much of a pain to remove.
-        self.say(text, recipient, max_messages)
+        self.osd(text, recipient, 'PRIVMSG', max_messages)
 
-    def say(self, text, recipient, max_messages=1):
-        """Send ``text`` as a PRIVMSG to ``recipient``.
+    def osd(self, messages, recipients, text_method='PRIVMSG', max_messages=-1):
+        """Send ``text`` as a PRIVMSG, CTCP ACTION, or NOTICE to ``recipients``.
 
         In the context of a triggered callable, the ``recipient`` defaults to
         the channel (or nickname, if a private message) from which the message
         was received.
 
-        By default, this will attempt to send the entire ``text`` in one
-        message. If the text is too long for the server, it may be truncated.
-        If ``max_messages`` is given, the ``text`` will be split into at most
-        that many messages, each no more than 400 bytes. The split is made at
-        the last space character before the 400th byte, or at the 400th byte if
-        no such space exists. If the ``text`` is too long to fit into the
-        specified number of messages using the above splitting, the final
-        message will contain the entire remainder, which may be truncated by
-        the server.
+        By default, unless specified in the configuration file, there is some
+        built-in flood protection. Messages displayed over 5 times in 2 minutes
+        will be displayed as '...'.
+
+        The ``recipient`` can be in list format or a comma seperated string,
+        with the ability to send to multiple recipients simultaneously. The
+        default recipients that the bot will send to is 4 if the IRC server
+        doesn't specify a limit for TARGMAX.
+
+        Text can be sent to this function in either string or list format.
+        List format will insert as small buffering space between entries in the
+        list.
+
+        There are 512 bytes available in a single IRC message. This includes
+        hostmask of the bot as well as around 15 bytes of reserved IRC message
+        type. This also includes the destinations/recipients of the message.
+        This will split given strings/lists into a displayable format as close
+        to the maximum 512 bytes as possible.
+
+        If ``max_messages`` is given, the split mesage will display in as many
+        lines specified by this argument. Specifying ``0`` or a negative number
+        will display without limitation. By default this is set to ``-1`` when
+        called directly. When called from the say/msg/reply/notice/action it
+        will default to ``1``.
         """
-        excess = ''
-        if not isinstance(text, unicode):
-            # Make sure we are dealing with unicode string
-            text = text.decode('utf-8')
 
-        if max_messages > 1:
-            # Manage multi-line only when needed
-            text, excess = tools.get_sendable_message(text)
+        if not isinstance(messages, list):
+            messages = [messages]
 
-        try:
-            self.sending.acquire()
+        text_method = text_method.upper()
+        if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
+            text_method = 'PRIVMSG'
+
+        if not isinstance(recipients, list):
+            recipients = recipients.split(",")
+
+        available_bytes = 512
+        reserved_irc_bytes = 15
+        available_bytes -= reserved_irc_bytes
+        available_bytes -= len((self.users.get(self.nick).hostmask).encode('utf-8'))
+        # TODO available_bytes -= len((self.hostmask).encode('utf-8'))
+
+        maxtargets = 4
+        # TODO server.capabilities.maxtargets
+        recipientgroups, groupbytes = [], []
+        while len(recipients):
+            recipients_part = ','.join(x for x in recipients[-maxtargets:])
+            groupbytes.append(len((recipients_part).encode('utf-8')))
+            recipientgroups.append(recipients_part)
+            del recipients[-maxtargets:]
+
+        max_recipients_bytes = max(groupbytes)
+        available_bytes -= max_recipients_bytes
+
+        messages_refactor = ['']
+        # TODO add configuration for padding amount
+        message_padding = 4*" "
+        for message in messages:
+            if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
+                if messages_refactor[-1] == '':
+                    messages_refactor[-1] = message
+                else:
+                    messages_refactor[-1] = messages_refactor[-1] + message_padding + message
+            else:
+                chunknum = 0
+                chunks = message.split()
+                for chunk in chunks:
+                    if messages_refactor[-1] == '':
+                        if len(chunk.encode('utf-8')) <= available_bytes:
+                            messages_refactor[-1] = chunk
+                        else:
+                            chunksplit = map(''.join, zip(*[iter(chunk)]*available_bytes))
+                            messages_refactor.extend(chunksplit)
+                    elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                        if chunknum:
+                            messages_refactor[-1] = messages_refactor[-1] + " " + chunk
+                        else:
+                            messages_refactor[-1] = messages_refactor[-1] + message_padding + chunk
+                    else:
+                        if len(chunk.encode('utf-8')) <= available_bytes:
+                            messages_refactor.append(chunk)
+                        else:
+                            chunksplit = map(''.join, zip(*[iter(chunk)]*available_bytes))
+                            messages_refactor.extend(chunksplit)
+                    chunknum += 1
+
+        if max_messages >= 1:
+            messages_refactor = messages_refactor[:max_messages]
+
+        for recipientgroup in recipientgroups:
 
             # No messages within the last 3 seconds? Go ahead!
             # Otherwise, wait so it's been at least 0.8 seconds + penalty
 
-            recipient_id = Identifier(recipient)
+            recipient_id = Identifier(recipientgroup)
 
-            if recipient_id not in self.stack:
-                self.stack[recipient_id] = []
-            elif self.stack[recipient_id]:
-                elapsed = time.time() - self.stack[recipient_id][-1][0]
-                if elapsed < 3:
-                    penalty = float(max(0, len(text) - 40)) / 70
-                    wait = 0.8 + penalty
-                    if elapsed < wait:
-                        time.sleep(wait - elapsed)
+            recipient_stack = self.stack.setdefault(recipient_id, {
+                'messages': [],
+                'flood_left': 4,
+                'dots': 0,
+                # TODO
+                # 'flood_left': self.config.core.flood_burst_lines,
+            })
+            recipient_stack['dots'] = 0
 
-                # Loop detection
-                messages = [m[1] for m in self.stack[recipient_id][-8:]]
+            for text in messages_refactor:
 
-                # If what we about to send repeated at least 5 times in the
-                # last 2 minutes, replace with '...'
-                if messages.count(text) >= 5 and elapsed < 120:
-                    text = '...'
-                    if messages.count('...') >= 3:
-                        # If we said '...' 3 times, discard message
-                        return
+                try:
 
-            self.write(('PRIVMSG', recipient), text)
-            self.stack[recipient_id].append((time.time(), self.safe(text)))
-            self.stack[recipient_id] = self.stack[recipient_id][-10:]
-        finally:
-            self.sending.release()
-        # Now that we've sent the first part, we need to send the rest. Doing
-        # this recursively seems easier to me than iteratively
-        if excess:
-            self.msg(recipient, excess, max_messages - 1)
+                    self.sending.acquire()
 
-    def notice(self, text, dest):
+                    if not recipient_stack['flood_left']:
+                        elapsed = time.time() - recipient_stack['messages'][-1][0]
+                        # TODO
+                        # recipient_stack['flood_left'] = min(
+                        #    self.config.core.flood_burst_lines,
+                        #    int(elapsed) * self.config.core.flood_refill_rate)
+                        recipient_stack['flood_left'] = min(4, int(elapsed) * 1)
+
+                    if not recipient_stack['flood_left']:
+                        elapsed = time.time() - recipient_stack['messages'][-1][0]
+                        penalty = float(max(0, len(text) - 50)) / 70
+                        # TODO
+                        # wait = self.config.core.flood_empty_wait + penalty
+                        wait = 0.7 + penalty
+                        if elapsed < wait:
+                            time.sleep(wait - elapsed)
+
+                        # Loop detection
+                        messages = [m[1] for m in recipient_stack['messages'][-8:]]
+
+                        # If what we about to send repeated at least 5 times in the
+                        # last 2 minutes, replace with '...'
+                        if messages.count(text) >= 5 and elapsed < 120:
+                            recipient_stack['dots'] += 1
+                        else:
+                            recipient_stack['dots'] = 0
+
+                    if not recipient_stack['dots'] >= 3:
+
+                        recipient_stack['flood_left'] = max(0, recipient_stack['flood_left'] - 1)
+                        recipient_stack['messages'].append((time.time(), self.safe(text)))
+                        recipient_stack['messages'] = recipient_stack['messages'][-10:]
+
+                        if recipient_stack['dots']:
+                            text = '...'
+                            if text_method == 'ACTION':
+                                text_method = 'PRIVMSG'
+                        if text_method == 'ACTION':
+                            text = '\001ACTION {}\001'.format(text)
+                            self.write(('PRIVMSG', recipientgroup), text)
+                            text_method = 'PRIVMSG'
+                        elif text_method == 'NOTICE':
+                            self.write(('NOTICE', recipientgroup), text)
+                        else:
+                            self.write(('PRIVMSG', recipientgroup), text)
+
+                finally:
+                    self.sending.release()
+
+    def say(self, text, recipient, max_messages=1):
+        """Send ``text`` as a PRIVMSG to ``recipient``.
+        In the context of a triggered callable, the ``recipient`` defaults to
+        the channel (or nickname, if a private message) from which the message
+        was received.
+        """
+        self.osd(text, recipient, 'PRIVMSG', max_messages)
+
+    def notice(self, text, dest, max_messages=1):
         """Send an IRC NOTICE to a user or a channel.
 
         Within the context of a triggered callable, ``dest`` will default to
         the channel (or nickname, if a private message), in which the trigger
         happened.
         """
-        self.write(('NOTICE', dest), text)
+        self.osd(text, dest, 'NOTICE', max_messages)
 
-    def action(self, text, dest):
+    def action(self, text, dest, max_messages=1):
         """Send ``text`` as a CTCP ACTION PRIVMSG to ``dest``.
 
         The same loop detection and length restrictions apply as with
@@ -355,9 +465,9 @@ class Sopel(irc.Bot):
         the channel (or nickname, if a private message), in which the trigger
         happened.
         """
-        self.say('\001ACTION {}\001'.format(text), dest)
+        self.osd(text, dest, 'ACTION', max_messages)
 
-    def reply(self, text, dest, reply_to, notice=False):
+    def reply(self, text, dest, reply_to, notice=False, max_messages=1):
         """Prepend ``reply_to`` to ``text``, and send as a PRIVMSG to ``dest``.
 
         If ``notice`` is ``True``, send a NOTICE rather than a PRIVMSG.
@@ -372,9 +482,9 @@ class Sopel(irc.Bot):
         """
         text = '%s: %s' % (reply_to, text)
         if notice:
-            self.notice(text, dest)
+            self.osd(text, dest, 'NOTICE', max_messages)
         else:
-            self.say(text, dest)
+            self.osd(text, dest, 'PRIVMSG', max_messages)
 
     class SopelWrapper(object):
         def __init__(self, sopel, trigger):
@@ -395,27 +505,32 @@ class Sopel(irc.Bot):
         def __setattr__(self, attr, value):
             return setattr(self._bot, attr, value)
 
+        def osd(self, message, destination=None, text_method='PRIVMSG', max_messages=-1):
+            if destination is None:
+                destination = self._trigger.sender
+            self._bot.osd(message, destination, text_method, max_messages)
+
         def say(self, message, destination=None, max_messages=1):
             if destination is None:
                 destination = self._trigger.sender
             self._bot.say(message, destination, max_messages)
 
-        def action(self, message, destination=None):
+        def action(self, message, destination=None, max_messages=1):
             if destination is None:
                 destination = self._trigger.sender
-            self._bot.action(message, destination)
+            self._bot.action(message, destination, max_messages)
 
-        def notice(self, message, destination=None):
+        def notice(self, message, destination=None, max_messages=1):
             if destination is None:
                 destination = self._trigger.sender
-            self._bot.notice(message, destination)
+            self._bot.notice(message, destination, max_messages)
 
-        def reply(self, message, destination=None, reply_to=None, notice=False):
+        def reply(self, message, destination=None, reply_to=None, notice=False, max_messages=1):
             if destination is None:
                 destination = self._trigger.sender
             if reply_to is None:
                 reply_to = self._trigger.nick
-            self._bot.reply(message, destination, reply_to, notice)
+            self._bot.reply(message, destination, reply_to, notice, max_messages)
 
     def call(self, func, sopel, trigger):
         nick = trigger.nick
