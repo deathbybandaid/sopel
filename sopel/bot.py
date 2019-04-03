@@ -334,7 +334,7 @@ class Sopel(irc.Bot):
 
         messages_refactor = ['']
         # TODO add configuration for padding amount
-        message_padding = 4*" "
+        message_padding = 4 * " "
         for message in messages:
             if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
                 if messages_refactor[-1] == '':
@@ -349,7 +349,7 @@ class Sopel(irc.Bot):
                         if len(chunk.encode('utf-8')) <= available_bytes:
                             messages_refactor[-1] = chunk
                         else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)]*available_bytes))
+                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
                             messages_refactor.extend(chunksplit)
                     elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
                         if chunknum:
@@ -360,7 +360,7 @@ class Sopel(irc.Bot):
                         if len(chunk.encode('utf-8')) <= available_bytes:
                             messages_refactor.append(chunk)
                         else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)]*available_bytes))
+                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
                             messages_refactor.extend(chunksplit)
                     chunknum += 1
 
