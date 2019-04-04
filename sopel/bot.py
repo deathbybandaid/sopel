@@ -269,9 +269,9 @@ class Sopel(irc.Bot):
 
     def msg(self, recipient, text, max_messages=1):
         # Deprecated, but way too much of a pain to remove.
-        self.osd(text, recipient, 'PRIVMSG', max_messages)
+        self._send(text, recipient, 'PRIVMSG', max_messages)
 
-    def osd(self, messages, recipients, text_method='PRIVMSG', max_messages=-1):
+    def _send(self, text, recipients, text_method='PRIVMSG', max_messages=-1):
         """Send ``text`` as a PRIVMSG, CTCP ACTION, or NOTICE to ``recipients``.
 
         In the context of a triggered callable, the ``recipient`` defaults to
@@ -282,14 +282,10 @@ class Sopel(irc.Bot):
         built-in flood protection. Messages displayed over 5 times in 2 minutes
         will be displayed as '...'.
 
-        The ``recipient`` can be in list format or a comma seperated string,
+        The ``recipient`` can be in list format or a comma-seperated string,
         with the ability to send to multiple recipients simultaneously. The
         default recipients that the bot will send to is 4 if the IRC server
         doesn't specify a limit for TARGMAX.
-
-        Text can be sent to this function in either string or list format.
-        List format will insert as small buffering space between entries in the
-        list.
 
         There are 512 bytes available in a single IRC message. This includes
         hostmask of the bot as well as around 15 bytes of reserved IRC message
@@ -304,12 +300,9 @@ class Sopel(irc.Bot):
         will default to ``1``.
         """
 
-        if not isinstance(messages, list):
-            messages = [messages]
-
         text_method = text_method.upper()
-        if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
-            text_method = 'PRIVMSG'
+        if text_method not in ['NOTICE', 'ACTION', 'PRIVMSG', 'SAY']:
+            raise Exception('Capability conflict')
 
         if not isinstance(recipients, list):
             recipients = recipients.split(",")
@@ -332,40 +325,27 @@ class Sopel(irc.Bot):
         max_recipients_bytes = max(groupbytes)
         available_bytes -= max_recipients_bytes
 
-        messages_refactor = ['']
+        text_refactor = ['']
         # TODO add configuration for padding amount
-        message_padding = 4 * " "
-        for message in messages:
-            if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
-                if messages_refactor[-1] == '':
-                    messages_refactor[-1] = message
+        chunks = text.split()
+        for chunk in chunks:
+            if text_refactor[-1] == '':
+                if len(chunk.encode('utf-8')) <= available_bytes:
+                    text_refactor[-1] = chunk
                 else:
-                    messages_refactor[-1] = messages_refactor[-1] + message_padding + message
+                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                    text_refactor.extend(chunksplit)
+            elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                text_refactor[-1] = text_refactor[-1] + " " + chunk
             else:
-                chunknum = 0
-                chunks = message.split()
-                for chunk in chunks:
-                    if messages_refactor[-1] == '':
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor[-1] = chunk
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
-                    elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                        if chunknum:
-                            messages_refactor[-1] = messages_refactor[-1] + " " + chunk
-                        else:
-                            messages_refactor[-1] = messages_refactor[-1] + message_padding + chunk
-                    else:
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor.append(chunk)
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
-                    chunknum += 1
+                if len(chunk.encode('utf-8')) <= available_bytes:
+                    text_refactor.append(chunk)
+                else:
+                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                    text_refactor.extend(chunksplit)
 
         if max_messages >= 1:
-            messages_refactor = messages_refactor[:max_messages]
+            text_refactor = text_refactor[:max_messages]
 
         for recipientgroup in recipientgroups:
 
@@ -383,10 +363,8 @@ class Sopel(irc.Bot):
             })
             recipient_stack['dots'] = 0
 
-            for text in messages_refactor:
-
+            for text_line in text_refactor:
                 try:
-
                     self.sending.acquire()
 
                     if not recipient_stack['flood_left']:
@@ -399,7 +377,7 @@ class Sopel(irc.Bot):
 
                     if not recipient_stack['flood_left']:
                         elapsed = time.time() - recipient_stack['messages'][-1][0]
-                        penalty = float(max(0, len(text) - 50)) / 70
+                        penalty = float(max(0, len(text_line) - 50)) / 70
                         # TODO
                         # wait = self.config.core.flood_empty_wait + penalty
                         wait = 0.7 + penalty
@@ -411,7 +389,7 @@ class Sopel(irc.Bot):
 
                         # If what we about to send repeated at least 5 times in the
                         # last 2 minutes, replace with '...'
-                        if messages.count(text) >= 5 and elapsed < 120:
+                        if messages.count(text_line) >= 5 and elapsed < 120:
                             recipient_stack['dots'] += 1
                         else:
                             recipient_stack['dots'] = 0
@@ -419,22 +397,21 @@ class Sopel(irc.Bot):
                     if not recipient_stack['dots'] >= 3:
 
                         recipient_stack['flood_left'] = max(0, recipient_stack['flood_left'] - 1)
-                        recipient_stack['messages'].append((time.time(), self.safe(text)))
+                        recipient_stack['messages'].append((time.time(), self.safe(text_line)))
                         recipient_stack['messages'] = recipient_stack['messages'][-10:]
 
                         if recipient_stack['dots']:
-                            text = '...'
+                            text_line = '...'
                             if text_method == 'ACTION':
                                 text_method = 'PRIVMSG'
                         if text_method == 'ACTION':
-                            text = '\001ACTION {}\001'.format(text)
-                            self.write(('PRIVMSG', recipientgroup), text)
+                            text_line = '\001ACTION {}\001'.format(text_line)
+                            self.write(('PRIVMSG', recipientgroup), text_line)
                             text_method = 'PRIVMSG'
                         elif text_method == 'NOTICE':
-                            self.write(('NOTICE', recipientgroup), text)
-                        else:
-                            self.write(('PRIVMSG', recipientgroup), text)
-
+                            self.write(('NOTICE', recipientgroup), text_line)
+                        elif text_method in ['PRIVMSG', 'SAY']:
+                            self.write(('PRIVMSG', recipientgroup), text_line)
                 finally:
                     self.sending.release()
 
@@ -444,7 +421,7 @@ class Sopel(irc.Bot):
         the channel (or nickname, if a private message) from which the message
         was received.
         """
-        self.osd(text, recipient, 'PRIVMSG', max_messages)
+        self._send(text, recipient, 'PRIVMSG', max_messages)
 
     def notice(self, text, dest, max_messages=1):
         """Send an IRC NOTICE to a user or a channel.
@@ -453,7 +430,7 @@ class Sopel(irc.Bot):
         the channel (or nickname, if a private message), in which the trigger
         happened.
         """
-        self.osd(text, dest, 'NOTICE', max_messages)
+        self._send(text, dest, 'NOTICE', max_messages)
 
     def action(self, text, dest, max_messages=1):
         """Send ``text`` as a CTCP ACTION PRIVMSG to ``dest``.
@@ -465,7 +442,7 @@ class Sopel(irc.Bot):
         the channel (or nickname, if a private message), in which the trigger
         happened.
         """
-        self.osd(text, dest, 'ACTION', max_messages)
+        self._send(text, dest, 'ACTION', max_messages)
 
     def reply(self, text, dest, reply_to, notice=False, max_messages=1):
         """Prepend ``reply_to`` to ``text``, and send as a PRIVMSG to ``dest``.
@@ -482,9 +459,9 @@ class Sopel(irc.Bot):
         """
         text = '%s: %s' % (reply_to, text)
         if notice:
-            self.osd(text, dest, 'NOTICE', max_messages)
+            self._send(text, dest, 'NOTICE', max_messages)
         else:
-            self.osd(text, dest, 'PRIVMSG', max_messages)
+            self._send(text, dest, 'PRIVMSG', max_messages)
 
     class SopelWrapper(object):
         def __init__(self, sopel, trigger):
@@ -504,11 +481,6 @@ class Sopel(irc.Bot):
 
         def __setattr__(self, attr, value):
             return setattr(self._bot, attr, value)
-
-        def osd(self, message, destination=None, text_method='PRIVMSG', max_messages=-1):
-            if destination is None:
-                destination = self._trigger.sender
-            self._bot.osd(message, destination, text_method, max_messages)
 
         def say(self, message, destination=None, max_messages=1):
             if destination is None:
