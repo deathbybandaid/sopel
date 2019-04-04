@@ -326,23 +326,25 @@ class Sopel(irc.Bot):
         available_bytes -= max_recipients_bytes
 
         text_refactor = ['']
-        # TODO add configuration for padding amount
-        chunks = text.split()
-        for chunk in chunks:
-            if text_refactor[-1] == '':
-                if len(chunk.encode('utf-8')) <= available_bytes:
-                    text_refactor[-1] = chunk
+        if len(text.encode('utf-8')) <= available_bytes:
+            text_refactor[-1] = text
+        else:
+            chunks = text.split()
+            for chunk in chunks:
+                if text_refactor[-1] == '':
+                    if len(chunk.encode('utf-8')) <= available_bytes:
+                        text_refactor[-1] = chunk
+                    else:
+                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                        text_refactor.extend(chunksplit)
+                elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                    text_refactor[-1] = text_refactor[-1] + " " + chunk
                 else:
-                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                    text_refactor.extend(chunksplit)
-            elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                text_refactor[-1] = text_refactor[-1] + " " + chunk
-            else:
-                if len(chunk.encode('utf-8')) <= available_bytes:
-                    text_refactor.append(chunk)
-                else:
-                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                    text_refactor.extend(chunksplit)
+                    if len(chunk.encode('utf-8')) <= available_bytes:
+                        text_refactor.append(chunk)
+                    else:
+                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                        text_refactor.extend(chunksplit)
 
         if max_messages >= 1:
             text_refactor = text_refactor[:max_messages]
