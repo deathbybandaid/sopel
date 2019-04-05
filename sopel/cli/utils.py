@@ -173,6 +173,6 @@ def redirect_outputs(settings, is_quiet=False):
 
     Both ``sys.stderr`` and ``sys.stdout`` are redirected to a logfile.
     """
-    logfile = os.path.os.path.join(settings.core.logdir, os.path.basename(config.Config.filename) + '.stdio.log')
+    logfile = os.path.os.path.join(settings.core.logdir, os.path.basename(settings.filename) + '.stdio.log')
     sys.stderr = tools.OutputRedirect(logfile, True, is_quiet)
     sys.stdout = tools.OutputRedirect(logfile, False, is_quiet)
