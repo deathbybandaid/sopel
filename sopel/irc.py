@@ -421,7 +421,7 @@ class Bot(asynchat.async_chat):
 
                 signature = '%s (%s)' % (report[0], report[1])
                 # TODO: make not hardcoded
-                log_filename = os.path.join(self.config.core.logdir, os.path.basename(config.filename) + '.exceptions.log')
+                log_filename = os.path.join(self.config.core.logdir, os.path.basename(config.filename).rsplit('.', 1)[0] + '.exceptions.log')
                 with codecs.open(log_filename, 'a', encoding='utf-8') as logfile:
                     logfile.write('Signature: %s\n' % signature)
                     if trigger:
@@ -456,7 +456,7 @@ class Bot(asynchat.async_chat):
         LOGGER.error('Fatal error in core, please review exception log')
         # TODO: make not hardcoded
         logfile = codecs.open(
-            os.path.join(self.config.core.logdir, os.path.basename(config.filename) + '.exceptions.log'),
+            os.path.join(self.config.core.logdir, os.path.basename(config.filename).rsplit('.', 1)[0] + '.exceptions.log'),
             'a',
             encoding='utf-8'
         )
