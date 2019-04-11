@@ -254,11 +254,11 @@ def check_not_root():
     if opersystem in ["Linux", "Darwin"]:
         # Linux/Mac
         if os.getuid() == 0 or os.geteuid() == 0:
-            raise RuntimeError('Error: Do not run Sopel with root privileges.')
+            print('Error: Do not run Sopel with root privileges.')
     elif opersystem in ["Windows"]:
         # Windows
         if os.environ.get("USERNAME") == "Administrator":
-            raise RuntimeError('Error: Do not run Sopel as Administrator.')
+            print('Error: Do not run Sopel as Administrator.')
     else:
         tools.stderr(
             "Warning: %s is an uncommon operating system platform. "
