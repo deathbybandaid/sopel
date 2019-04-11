@@ -20,7 +20,7 @@ import re
 import threading
 import codecs
 import traceback
-from collections import defaultdict
+from collections import defaultdict, abc
 
 from sopel.tools._events import events  # NOQA
 
@@ -184,6 +184,107 @@ def get_sendable_message(text, max_length=400):
             text = text[:last_space]
 
     return text, excess.lstrip()
+
+
+def get_message_recipientgroups(bot, recipients):
+    """
+    Split recipients into groups based on server capabilities.
+    This defaults to 4
+
+    Input can be
+        * unicode string
+        * a comma-seperated unicode string
+        * list
+        * dict_keys handy for bot.channels.keys()
+    """
+
+    if isinstance(recipients, abc.KeysView):
+        recipients = [x for x in recipients]
+
+    if not isinstance(recipients, list):
+        recipients = recipients.split(",")
+
+    if not len(recipients):
+        raise ValueError("Recipients list empty.")
+
+    maxtargets = 4
+    # TODO server.capabilities.maxtargets
+    recipientgroups = []
+    while len(recipients):
+        recipients_part = ','.join(x for x in recipients[-maxtargets:])
+        recipientgroups.append(recipients_part)
+        del recipients[-maxtargets:]
+
+    return recipientgroups
+
+
+def get_available_message_bytes(bot, recipientgroups):
+    """
+    Get total available bytes for sending a message line
+
+    Total sendable bytes is 512
+        * 15 are reserved for basic IRC NOTICE/PRIVMSG and a small buffer.
+        * The bots hostmask plays a role in this count
+            Note: if unavailable, we calculate the maximum length of a hostmask
+        * The recipients we send to also is a factor. Multiple recipients reduces
+          sendable message length
+    """
+
+    available_bytes = 512
+    reserved_irc_bytes = 15
+    available_bytes -= reserved_irc_bytes
+    try:
+        hostmaskbytes = len((bot.users.get(bot.nick).hostmask).encode('utf-8'))
+    except AttributeError:
+        hostmaskbytes = len((bot.nick).encode('utf-8')) + 12 + 63
+    available_bytes -= hostmaskbytes
+
+    groupbytes = []
+    for recipients_part in recipientgroups:
+        groupbytes.append(len((recipients_part).encode('utf-8')))
+
+    max_recipients_bytes = max(groupbytes)
+    available_bytes -= max_recipients_bytes
+
+    return available_bytes
+
+
+def get_sendable_message_list(text, available_bytes=400):
+    """Get a sendable ``text`` message, with its excess when needed.
+
+    :param str txt: unicode string of text to send
+    :param int available_bytes: maximum length of the message to be sendable
+    :return: a list of text.
+
+    We're arbitrarily saying that the max is 400 bytes of text when
+    messages will be split (if not specified).
+
+    The `available_bytes` is the max length of text in **bytes**, but we take
+    care of unicode 2-bytes characters, by working on the unicode string,
+    then making sure the bytes version is smaller than the max length.
+    """
+
+    text_refactor = ['']
+    if len(text.encode('utf-8')) <= available_bytes:
+        text_refactor[-1] = text
+    else:
+        chunks = text.split()
+        for chunk in chunks:
+            if text_refactor[-1] == '':
+                if len(chunk.encode('utf-8')) <= available_bytes:
+                    text_refactor[-1] = chunk
+                else:
+                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                    text_refactor.extend(chunksplit)
+            elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                text_refactor[-1] = text_refactor[-1] + " " + chunk
+            else:
+                if len(chunk.encode('utf-8')) <= available_bytes:
+                    text_refactor.append(chunk)
+                else:
+                    chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                    text_refactor.extend(chunksplit)
+    return text_refactor
 
 
 def deprecated(old):
