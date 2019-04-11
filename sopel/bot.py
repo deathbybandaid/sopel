@@ -304,50 +304,12 @@ class Sopel(irc.Bot):
         if text_method not in ['NOTICE', 'ACTION', 'PRIVMSG', 'SAY']:
             raise Exception('Capability conflict')
 
-        if not isinstance(recipients, list):
-            recipients = recipients.split(",")
-
-        available_bytes = 512
-        reserved_irc_bytes = 15
-        available_bytes -= reserved_irc_bytes
-        available_bytes -= len((self.users.get(self.nick).hostmask).encode('utf-8'))
-        # TODO available_bytes -= len((self.hostmask).encode('utf-8'))
-
-        maxtargets = 4
-        # TODO server.capabilities.maxtargets
-        recipientgroups, groupbytes = [], []
-        while len(recipients):
-            recipients_part = ','.join(x for x in recipients[-maxtargets:])
-            groupbytes.append(len((recipients_part).encode('utf-8')))
-            recipientgroups.append(recipients_part)
-            del recipients[-maxtargets:]
-
-        max_recipients_bytes = max(groupbytes)
-        available_bytes -= max_recipients_bytes
-
-        text_refactor = ['']
-        if len(text.encode('utf-8')) <= available_bytes:
-            text_refactor[-1] = text
-        else:
-            chunks = text.split()
-            for chunk in chunks:
-                if text_refactor[-1] == '':
-                    if len(chunk.encode('utf-8')) <= available_bytes:
-                        text_refactor[-1] = chunk
-                    else:
-                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                        text_refactor.extend(chunksplit)
-                elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                    text_refactor[-1] = text_refactor[-1] + " " + chunk
-                else:
-                    if len(chunk.encode('utf-8')) <= available_bytes:
-                        text_refactor.append(chunk)
-                    else:
-                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                        text_refactor.extend(chunksplit)
+        recipientgroups = tools.get_message_recipientgroups(self, recipients)
+        available_bytes = tools.get_available_message_bytes(self, recipientgroups)
+        messages_list = tools.get_sendable_message_list(text, available_bytes)
 
         if max_messages >= 1:
-            text_refactor = text_refactor[:max_messages]
+            messages_list = messages_list[:max_messages]
 
         for recipientgroup in recipientgroups:
 
@@ -365,7 +327,7 @@ class Sopel(irc.Bot):
             })
             recipient_stack['dots'] = 0
 
-            for text_line in text_refactor:
+            for text_line in messages_list:
                 try:
                     self.sending.acquire()
 
