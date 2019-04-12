@@ -121,6 +121,26 @@ def rule(value):
     return add_attribute
 
 
+def prefix():
+    """Decorate a function to be called when a line matches the config prefix
+
+    If the Sopel instance is in a channel, or sent a PRIVMSG, where a string
+    matching this expression is said, the function will execute. Note that
+    captured groups here will be retrievable through the Trigger object later.
+
+    Inside the regular expression, some special directives can be used. $nick
+    will be replaced with the nick of the bot and , or :, and $nickname will be
+    replaced with the nick of the bot.
+    """
+    def add_attribute(function):
+        if not hasattr(function, "rule"):
+            function.rule = []
+        function.rule.append(sopel.config.core.prefix)
+        return function
+
+    return add_attribute
+
+
 def thread(value):
     """Decorate a function to specify if it should be run in a separate thread.
 
