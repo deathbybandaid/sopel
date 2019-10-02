@@ -112,6 +112,21 @@ def test_unusual_pretrigger(nick):
     assert pretrigger.event == 'PING'
 
 
+def test_ctcp_action(nick):
+    line = ':Foo!foo@example.com PRIVMSG Sopel :\x01ACTION\x01'
+    pretrigger = PreTrigger(nick, line)
+    assert pretrigger.is_action is True
+    assert pretrigger.tags == {'intent': 'VERSION'}
+    assert pretrigger.hostmask == 'Foo!foo@example.com'
+    assert pretrigger.line == line
+    assert pretrigger.args == ['Sopel', '']
+    assert pretrigger.event == 'PRIVMSG'
+    assert pretrigger.nick == Identifier('Foo')
+    assert pretrigger.user == 'foo'
+    assert pretrigger.host == 'example.com'
+    assert pretrigger.sender == Identifier('Foo')
+
+
 def test_ctcp_intent_pretrigger(nick):
     line = ':Foo!foo@example.com PRIVMSG Sopel :\x01VERSION\x01'
     pretrigger = PreTrigger(nick, line)

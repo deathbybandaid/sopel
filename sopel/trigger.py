@@ -23,7 +23,7 @@ class PreTrigger(object):
     """A parsed message from the server, which has not been matched against
     any rules."""
     component_regex = re.compile(r'([^!]*)!?([^@]*)@?(.*)')
-    intent_regex = re.compile('\x01(\\S+) ?(.*)\x01')
+    ctcp_regex = re.compile('\x01(\\S+) ?(.*)\x01')
 
     def __init__(self, own_nick, line):
         """own_nick is the bot's nick, needed to correctly parse sender.
@@ -94,12 +94,17 @@ class PreTrigger(object):
             target = self.nick
         self.sender = target
 
-        # Parse CTCP into a form consistent with IRCv3 intents
+        # Parse CTCP into a usable form
+        self.is_ctcp = False
+        self.is_action = False
         if self.event == 'PRIVMSG' or self.event == 'NOTICE':
-            intent_match = PreTrigger.intent_regex.match(self.args[-1])
-            if intent_match:
-                intent, message = intent_match.groups()
-                self.tags['intent'] = intent
+            ctcp_match = PreTrigger.ctcp_regex.match(self.args[-1])
+            if ctcp_match:
+                ctcp, message = ctcp_match.groups()
+                self.tags['intent'] = ctcp  # TODO deprecate
+                self.is_ctcp = ctcp
+                if ctcp == 'ACTION':
+                    self.is_action = True
                 self.args[-1] = message or ''
 
         # Populate account from extended-join messages
@@ -113,7 +118,7 @@ class Trigger(unicode):
 
     Note that CTCP messages (`PRIVMSG`es and `NOTICE`es which start and end
     with `'\\x01'`) will have the `'\\x01'` bytes stripped, and the command
-    (e.g. `ACTION`) placed mapped to the `'intent'` key in `Trigger.tags`.
+    (e.g. `ACTION`) placed mapped to `Trigger.is_action`.
     """
     sender = property(lambda self: self._pretrigger.sender)
     """The channel from which the message was sent.
@@ -165,6 +170,10 @@ class Trigger(unicode):
     """
     tags = property(lambda self: self._pretrigger.tags)
     """A map of the IRCv3 message tags on the message."""
+    is_ctcp = property(lambda self: self._pretrigger.is_ctcp)
+    """False if no CTCP in message."""
+    is_action = property(lambda self: self._pretrigger.is_ctcp)
+    """False unless CTCP in message is `ACTION`."""
     admin = property(lambda self: self._admin)
     """True if the nick which triggered the command is one of the bot's admins.
     """
