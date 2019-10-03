@@ -213,6 +213,29 @@ def test_nickname_commands_multiple():
     assert mock.nickname_commands == ['robot', 'bot', 'sopel']
 
 
+def test_action_commands():
+    @module.action_commands('sopel')
+    def mock(bot, trigger, match):
+        return True
+    assert mock.nickname_commands == ['sopel']
+
+
+def test_action_commands_args():
+    @module.action_commands('sopel', 'bot')
+    def mock(bot, trigger, match):
+        return True
+    assert mock.nickname_commands == ['sopel', 'bot']
+
+
+def test_action_commands_multiple():
+    @module.action_commands('sopel', 'bot')
+    @module.action_commands('bot')
+    @module.action_commands('robot')
+    def mock(bot, trigger, match):
+        return True
+    assert mock.nickname_commands == ['robot', 'bot', 'sopel']
+
+
 def test_priority():
     @module.priority('high')
     def mock(bot, trigger, match):
