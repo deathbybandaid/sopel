@@ -217,14 +217,14 @@ def test_action_commands():
     @module.action_commands('sopel')
     def mock(bot, trigger, match):
         return True
-    assert mock.nickname_commands == ['sopel']
+    assert mock.action_commands == ['sopel']
 
 
 def test_action_commands_args():
     @module.action_commands('sopel', 'bot')
     def mock(bot, trigger, match):
         return True
-    assert mock.nickname_commands == ['sopel', 'bot']
+    assert mock.action_commands == ['sopel', 'bot']
 
 
 def test_action_commands_multiple():
@@ -233,7 +233,7 @@ def test_action_commands_multiple():
     @module.action_commands('robot')
     def mock(bot, trigger, match):
         return True
-    assert mock.nickname_commands == ['robot', 'bot', 'sopel']
+    assert mock.action_commands == ['robot', 'bot', 'sopel']
 
 
 def test_priority():
