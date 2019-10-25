@@ -125,13 +125,30 @@ def subreddit_info(bot, trigger, match, subcommand):
     except prawcore.exceptions.NotFound:
         return bot.say(match + " does not appear to be a valid subreddit.")
 
+    subreddit = r.subreddit(match)
+    subreddit_name = subreddit.name
+
     subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
     if subcommand not in subcommand_valid and not str(subcommand).isdigit():
         return bot.say("Invalid subreddit command.")
 
-    bot.say(subcommand)
+    if subcommand == 'check':
+        bot.say(subreddit_name)
+        return
+        message = ('[REDDIT] {title} {link}{nsfw} | {points} points ({percent}) | '
+                   '{comments} comments | Posted by {author} | '
+                   'Created at {created}')
+        message = message.format(
+            title=title, link=link, nsfw=nsfw, points=s.score, percent=percent,
+            comments=s.num_comments, author=author, created=created)
+        bot.say(message)
+        return
 
     subreddit = r.subreddit(match)
+
+    message = ('[REDDIT] {title} {link}{nsfw} | {points} points ({percent}) | '
+               '{comments} comments | Posted by {author} | '
+               'Created at {created}')
 
 
 def redditor_info(bot, trigger, match=None):
