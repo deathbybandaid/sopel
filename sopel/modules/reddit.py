@@ -113,7 +113,7 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
-def subreddit_info(bot, trigger, match):
+def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
         user_agent=USER_AGENT,
@@ -122,48 +122,49 @@ def subreddit_info(bot, trigger, match):
     )
     try:
         r.subreddits.search_by_name(match, exact=True)
+        s = r.subreddit(match)
+        subreddit_url = "https://www.reddit.com/r/" + s.display_name
+
+        tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
+                               trigger.sender)
+        time_created = dt.datetime.utcfromtimestamp(s.created_utc)
+        created = time.format_time(bot.db, bot.config, tz, trigger.nick,
+                                   trigger.sender, time_created)
+
+        message = ('[REDDIT] {subreddit_url}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
+
+        nsfw = ''
+        if s.over18:
+            nsfw += ' ' + bold(color('[NSFW]', colors.RED))
+
+            sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
+            if sfw:
+                subreddit_url = '(link hidden)'
+                bot.kick(
+                    trigger.nick, trigger.sender,
+                    'Linking to NSFW content in a SFW channel.'
+                )
+
+        message = message.format(
+            subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
+        bot.say(message)
     except prawcore.exceptions.NotFound:
-        return bot.say(match + " does not appear to be a valid subreddit.")
-
-    s = r.subreddit(match)
-    subreddit_url = "https://www.reddit.com/r/" + s.display_name
-
-    tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
-                           trigger.sender)
-    time_created = dt.datetime.utcfromtimestamp(s.created_utc)
-    created = time.format_time(bot.db, bot.config, tz, trigger.nick,
-                               trigger.sender, time_created)
-
-    message = ('[REDDIT] {subreddit_url}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
-
-    nsfw = ''
-    if s.over18:
-        nsfw += ' ' + bold(color('[NSFW]', colors.RED))
-
-        sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
-        if sfw:
-            subreddit_url = '(link hidden)'
-            bot.kick(
-                trigger.nick, trigger.sender,
-                'Linking to NSFW content in a SFW channel.'
-            )
-
-    message = message.format(
-        subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
-    bot.say(message)
+        if commanded:
+            bot.say('No such subreddit.')
+        # Fail silently if it wasn't an explicit command.
+        return NOLIMIT
 
 
-def redditor_info(bot, trigger, match=None):
+def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
-    commanded = re.match(bot.config.core.prefix + 'redditor', trigger)
+
     r = praw.Reddit(
         user_agent=USER_AGENT,
         client_id='6EiphT6SSQq7FQ',
         client_secret=None,
     )
-    match = match or trigger
     try:
-        u = r.redditor(match.group(2))
+        u = r.redditor(match)
         message = '[REDDITOR] ' + u.name
         now = dt.datetime.utcnow()
         cakeday_start = dt.datetime.utcfromtimestamp(u.created_utc)
@@ -316,7 +317,7 @@ def subreddit_command(bot, trigger):
 
     # subreddit names do not contain spaces
     match = trigger.group(3)
-    return subreddit_info(bot, trigger, match)
+    return subreddit_info(bot, trigger, match, commanded=True)
 
 
 # If you change this, you'll have to change some other things...
@@ -329,4 +330,4 @@ def redditor_command(bot, trigger):
 
     # Redditor names do not contain spaces
     match = trigger.group(3)
-    return redditor_info(bot, trigger, match)
+    return redditor_info(bot, trigger, match, commanded=True)
