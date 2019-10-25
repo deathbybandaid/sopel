@@ -134,9 +134,7 @@ def subreddit_info(bot, trigger, match, subcommand):
         return bot.say("Invalid subreddit command.")
 
     if subcommand == 'check':
-        message = ('[REDDIT] {title} {subreddit_url}{nsfw} | {subscribers} points ({percent}) | '
-                   '{comments} comments | Posted by {author} | '
-                   'Created at {created}')
+        message = ('[REDDIT] {title} {subreddit_url}{nsfw} | {subscribers} points ({percent}) | Created at {created} | {public_description}')
 
         nsfw = ''
         if s.over18:
@@ -151,7 +149,7 @@ def subreddit_info(bot, trigger, match, subcommand):
                 )
 
         message = message.format(
-            title=subreddit_name, subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc)
+            title=subreddit_name, subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc, public_description=s.public_description)
         bot.say(message)
         return
 
