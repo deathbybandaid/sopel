@@ -126,7 +126,7 @@ def subreddit_info(bot, trigger, match, subcommand):
         return bot.say(match + " does not appear to be a valid subreddit.")
 
     subreddit = r.subreddit(match)
-    subreddit_name = subreddit.name
+    subreddit_name = subreddit.display_name
 
     subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
     if subcommand not in subcommand_valid and not str(subcommand).isdigit():
