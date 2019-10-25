@@ -208,7 +208,7 @@ def auto_redditor_info(bot, trigger, match):
 
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
-    return bot.say(str(trigger.group(2)))
+    return bot.say(str(trigger))
     subreddit_info(bot, trigger, match.group(2))
 
 
