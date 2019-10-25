@@ -10,7 +10,6 @@ https://sopel.chat
 from __future__ import unicode_literals, absolute_import, print_function, division
 
 import datetime as dt
-import re
 import sys
 
 import praw
