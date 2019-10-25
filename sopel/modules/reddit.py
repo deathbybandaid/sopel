@@ -36,7 +36,7 @@ else:
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
 post_url = r'%s/r/.*?/comments/([\w-]+)' % domain
 short_post_url = r'https?://redd.it/([\w-]+)'
-sub_url = r'%s/r)?/([\w-]+)' % domain
+sub_url = r'%s/r(ser))?/([\w-]+)' % domain
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
 
 
