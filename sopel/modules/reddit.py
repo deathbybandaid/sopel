@@ -124,33 +124,10 @@ def subreddit_info(bot, trigger, match):
         r.subreddits.search_by_name(match, exact=True)
     except prawcore.exceptions.NotFound:
         return bot.say(match + " does not appear to be a valid subreddit.")
+
     subreddit = r.subreddit(match)
-    bot.say(str(subreddit))
 
-
-@commands('subreddit')
-@example('.subreddit plex')
-def subreddit_command(bot, trigger):
-    # require input
-    if not trigger.group(2):
-        return bot.reply('You must provide a subreddit name.')
-
-    # subreddit names do not contain spaces
-    match = trigger.group(3)
-    return subreddit_info(bot, trigger, match)
-
-
-# If you change this, you'll have to change some other things...
-@commands('redditor')
-@example('.redditor poem_for_your_sprog')
-def redditor_command(bot, trigger):
-    # require input
-    if not trigger.group(2):
-        return bot.reply('You must provide a Redditor name.')
-
-    # Redditor names do not contain spaces
-    match = trigger.group(3)
-    return redditor_info(bot, trigger, match)
+    subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
 
 
 def redditor_info(bot, trigger, match=None):
@@ -305,3 +282,29 @@ def reddit_slash_info(bot, trigger):
         return subreddit_info(bot, trigger, match)
     elif searchtype == "u":
         return redditor_info(bot, trigger, match)
+
+
+@commands('subreddit')
+@example('.subreddit plex')
+def subreddit_command(bot, trigger):
+    # require input
+    if not trigger.group(2):
+        return bot.reply('You must provide a subreddit name.')
+
+    # subreddit names do not contain spaces
+    match = trigger.group(3)
+    return subreddit_info(bot, trigger, match)
+
+
+# If you change this, you'll have to change some other things...
+@commands('redditor')
+@example('.redditor poem_for_your_sprog')
+def redditor_command(bot, trigger):
+    # require input
+    if not trigger.group(2):
+        return bot.reply('You must provide a Redditor name.')
+
+    # Redditor names do not contain spaces
+    match = trigger.group(3)
+    subcommand = trigger.group(4)
+    return redditor_info(bot, trigger, match)
