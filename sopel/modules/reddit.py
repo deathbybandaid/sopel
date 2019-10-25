@@ -202,8 +202,7 @@ def redditor_info(bot, trigger, match, commanded=False):
 # If you change the groups here, you'll have to change some things above.
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
-    bot.say(str(match.group(2)))
-    redditor_info(bot, trigger, match)
+    redditor_info(bot, trigger, match.group(2))
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
