@@ -302,9 +302,9 @@ def reddit_slash_info(bot, trigger):
     searchtype = trigger.group(1)
     match = trigger.group(2)
     if searchtype == "r":
-        return subreddit_info(bot, trigger, match)
+        return subreddit_info(bot, trigger, match, commanded=True)
     elif searchtype == "u":
-        return redditor_info(bot, trigger, match)
+        return redditor_info(bot, trigger, match, commanded=True)
 
 
 @commands('subreddit')
