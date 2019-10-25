@@ -125,8 +125,9 @@ def subreddit_info(bot, trigger, match, subcommand):
     except prawcore.exceptions.NotFound:
         return bot.say(match + " does not appear to be a valid subreddit.")
 
-    subreddit = r.subreddit(match)
-    subreddit_name = subreddit.display_name
+    s = r.subreddit(match)
+    subreddit_name = s.display_name
+    subreddit_url = "https://www.reddit.com/r/" + subreddit_name
 
     subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
     if subcommand not in subcommand_valid and not str(subcommand).isdigit():
@@ -135,16 +136,28 @@ def subreddit_info(bot, trigger, match, subcommand):
     if subcommand == 'check':
         bot.say(subreddit_name)
         return
-        message = ('[REDDIT] {title} {link}{nsfw} | {points} points ({percent}) | '
+        message = ('[REDDIT] {title} {link}{nsfw} | {subscribers} points ({percent}) | '
                    '{comments} comments | Posted by {author} | '
                    'Created at {created}')
+
+        link = subreddit_url
+        if s.over18:
+            nsfw = ''
+            if s.over_18:
+                nsfw += ' ' + bold(color('[NSFW]', colors.RED))
+
+                sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
+                if sfw:
+                    link = '(link hidden)'
+                    bot.kick(
+                        trigger.nick, trigger.sender,
+                        'Linking to NSFW content in a SFW channel.'
+                    )
+
         message = message.format(
-            title=title, link=link, nsfw=nsfw, points=s.score, percent=percent,
-            comments=s.num_comments, author=author, created=created)
+            title=subreddit_name, link=link, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc)
         bot.say(message)
         return
-
-    subreddit = r.subreddit(match)
 
     message = ('[REDDIT] {title} {link}{nsfw} | {points} points ({percent}) | '
                '{comments} comments | Posted by {author} | '
