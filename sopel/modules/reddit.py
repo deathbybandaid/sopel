@@ -113,7 +113,7 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
-def subreddit_info(bot, trigger, match):
+def subreddit_info(bot, trigger, match, subcommand):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
         user_agent=USER_AGENT,
@@ -125,9 +125,13 @@ def subreddit_info(bot, trigger, match):
     except prawcore.exceptions.NotFound:
         return bot.say(match + " does not appear to be a valid subreddit.")
 
-    subreddit = r.subreddit(match)
-
     subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
+    if subcommand not in subcommand_valid or not subcommand.isdigit():
+        return bot.say("Invalid subreddit command.")
+
+    bot.say(subcommand)
+
+    subreddit = r.subreddit(match)
 
 
 def redditor_info(bot, trigger, match=None):
@@ -279,7 +283,7 @@ def reddit_slash_info(bot, trigger):
     searchtype = trigger.group(1)
     match = trigger.group(2)
     if searchtype == "r":
-        return subreddit_info(bot, trigger, match)
+        return subreddit_info(bot, trigger, match, "check")
     elif searchtype == "u":
         return redditor_info(bot, trigger, match)
 
@@ -306,5 +310,4 @@ def redditor_command(bot, trigger):
 
     # Redditor names do not contain spaces
     match = trigger.group(3)
-    subcommand = trigger.group(4)
-    return redditor_info(bot, trigger, match)
+    return redditor_info(bot, trigger, match, "check")
