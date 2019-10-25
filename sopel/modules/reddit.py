@@ -134,25 +134,24 @@ def subreddit_info(bot, trigger, match, subcommand):
         return bot.say("Invalid subreddit command.")
 
     if subcommand == 'check':
-        message = ('[REDDIT] {title} {link}{nsfw} | {subscribers} points ({percent}) | '
+        message = ('[REDDIT] {title} {subreddit_url}{nsfw} | {subscribers} points ({percent}) | '
                    '{comments} comments | Posted by {author} | '
                    'Created at {created}')
 
-        link = subreddit_url
         nsfw = ''
         if s.over_18:
             nsfw += ' ' + bold(color('[NSFW]', colors.RED))
 
             sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
             if sfw:
-                link = '(link hidden)'
+                subreddit_url = '(link hidden)'
                 bot.kick(
                     trigger.nick, trigger.sender,
                     'Linking to NSFW content in a SFW channel.'
                 )
 
         message = message.format(
-            title=subreddit_name, link=link, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc)
+            title=subreddit_name, subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc)
         bot.say(message)
         return
 
