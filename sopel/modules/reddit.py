@@ -115,22 +115,26 @@ def rpost_info(bot, trigger, match):
 
 @commands('subreddit')
 @example('.subreddit plex')
-def subreddit_info(bot, trigger, match=None):
+def subreddit_command(bot, trigger):
+    # require input
+    if not trigger.group(2):
+        return bot.reply('You must provide a subreddit name.')
+
+    match = trigger.group(3)
+    return subreddit_info(bot, trigger, match)
+
+
+def subreddit_info(bot, trigger, match):
     """Shows information about the given subreddit"""
-    if not match:
-        match = trigger.group(1)
     r = praw.Reddit(
         user_agent=USER_AGENT,
         client_id='6EiphT6SSQq7FQ',
         client_secret=None,
     )
-    match = match or trigger
-
     try:
         r.subreddits.search_by_name(match, exact=True)
     except prawcore.exceptions.NotFound:
         return bot.say(match + " does not appear to be a valid subreddit.")
-
     subreddit = r.subreddit(match)
     bot.say(str(subreddit))
 
