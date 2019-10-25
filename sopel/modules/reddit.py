@@ -203,7 +203,7 @@ def redditor_info(bot, trigger, match, commanded=False):
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
     bot.say(str(match.group()))
-    bot.say(str(trigger))
+    bot.say(str(trigger.args))
     redditor_info(bot, trigger, match.group(2))
 
 
