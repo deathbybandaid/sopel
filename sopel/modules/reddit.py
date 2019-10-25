@@ -17,7 +17,7 @@ import praw
 import prawcore
 
 from sopel.formatting import bold, color, colors
-from sopel.module import commands, example, require_chanmsg, url, NOLIMIT, OP
+from sopel.module import commands, example, require_chanmsg, url, NOLIMIT, OP, rule
 from sopel.tools import time
 from sopel.tools.web import USER_AGENT
 
@@ -111,6 +111,28 @@ def rpost_info(bot, trigger, match):
     except prawcore.exceptions.NotFound:
         bot.say('No such post.')
         return NOLIMIT
+
+
+@commands('subreddit')
+@example('.subreddit plex')
+def subreddit_info(bot, trigger, match=None):
+    """Shows information about the given subreddit"""
+    if not match:
+        match = trigger.group(1)
+    r = praw.Reddit(
+        user_agent=USER_AGENT,
+        client_id='6EiphT6SSQq7FQ',
+        client_secret=None,
+    )
+    match = match or trigger
+
+    try:
+        r.subreddits.search_by_name(match, exact=True)
+    except prawcore.exceptions.NotFound:
+        return bot.say(match + " does not appear to be a valid subreddit.")
+
+    subreddit = r.subreddit(match)
+    bot.say(str(subreddit))
 
 
 # If you change this, you'll have to change some other things...
@@ -258,3 +280,13 @@ def get_channel_spoiler_free(bot, trigger):
         bot.say('%s is flagged as spoiler-free' % channel)
     else:
         bot.say('%s is flagged as spoilers-allowed' % channel)
+
+
+@rule(r"^(r|u)\/([^\s/]+)")
+def reddit_slash_info(bot, trigger):
+    searchtype = trigger.group(1)
+    match = trigger.group(2)
+    if searchtype == "r":
+        return subreddit_info(bot, trigger, match)
+    elif searchtype == "u":
+        return redditor_info(bot, trigger, match)
