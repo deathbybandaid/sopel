@@ -139,7 +139,7 @@ def subreddit_info(bot, trigger, match, subcommand):
                    'Created at {created}')
 
         nsfw = ''
-        if s.over_18:
+        if s.over18:
             nsfw += ' ' + bold(color('[NSFW]', colors.RED))
 
             sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
