@@ -34,6 +34,7 @@ else:
 
 
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
+subreddit_url = r'%s/r/.*?/([\w-]+)' % domain
 post_url = r'%s/r/.*?/comments/([\w-]+)' % domain
 short_post_url = r'https?://redd.it/([\w-]+)'
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
@@ -122,7 +123,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
     try:
         r.subreddits.search_by_name(match, exact=True)
         s = r.subreddit(match)
-        subreddit_url = "https://www.reddit.com/r/" + s.display_name
+        link = "https://www.reddit.com/r/" + s.display_name
 
         tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
                                trigger.sender)
@@ -130,7 +131,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
         created = time.format_time(bot.db, bot.config, tz, trigger.nick,
                                    trigger.sender, time_created)
 
-        message = ('[REDDIT] {subreddit_url}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
+        message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
 
         nsfw = ''
         if s.over18:
@@ -138,14 +139,14 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
             sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
             if sfw:
-                subreddit_url = '(link hidden)'
+                link = '(link hidden)'
                 bot.kick(
                     trigger.nick, trigger.sender,
                     'Linking to NSFW content in a SFW channel.'
                 )
 
         message = message.format(
-            subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
+            link=link, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
         bot.say(message)
     except prawcore.exceptions.NotFound:
         if commanded:
@@ -203,6 +204,11 @@ def redditor_info(bot, trigger, match, commanded=False):
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
     redditor_info(bot, trigger, match.group(2))
+
+
+@url(subreddit_url)
+def auto_subreddit_info(bot, trigger, match):
+    subreddit_info(bot, trigger, match.group(2))
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
