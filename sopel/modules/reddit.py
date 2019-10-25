@@ -113,7 +113,7 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
-def subreddit_info(bot, trigger, match, subcommand):
+def subreddit_info(bot, trigger, match):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
         user_agent=USER_AGENT,
@@ -126,32 +126,31 @@ def subreddit_info(bot, trigger, match, subcommand):
         return bot.say(match + " does not appear to be a valid subreddit.")
 
     s = r.subreddit(match)
-    subreddit_name = s.display_name
-    subreddit_url = "https://www.reddit.com/r/" + subreddit_name
+    subreddit_url = "https://www.reddit.com/r/" + s.display_name
 
-    subcommand_valid = ['check', 'hot', 'new', 'top', 'random', 'controversial', 'gilded', 'rising', 'best']
-    if subcommand not in subcommand_valid and not str(subcommand).isdigit():
-        return bot.say("Invalid subreddit command.")
+    tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
+                           trigger.sender)
+    time_created = dt.datetime.utcfromtimestamp(s.created_utc)
+    created = time.format_time(bot.db, bot.config, tz, trigger.nick,
+                               trigger.sender, time_created)
 
-    if subcommand == 'check':
-        message = ('[REDDIT] {title} {subreddit_url}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
+    message = ('[REDDIT] {subreddit_url}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
 
-        nsfw = ''
-        if s.over18:
-            nsfw += ' ' + bold(color('[NSFW]', colors.RED))
+    nsfw = ''
+    if s.over18:
+        nsfw += ' ' + bold(color('[NSFW]', colors.RED))
 
-            sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
-            if sfw:
-                subreddit_url = '(link hidden)'
-                bot.kick(
-                    trigger.nick, trigger.sender,
-                    'Linking to NSFW content in a SFW channel.'
-                )
+        sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
+        if sfw:
+            subreddit_url = '(link hidden)'
+            bot.kick(
+                trigger.nick, trigger.sender,
+                'Linking to NSFW content in a SFW channel.'
+            )
 
-        message = message.format(
-            title=subreddit_name, subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc, public_description=s.public_description)
-        bot.say(message)
-        return
+    message = message.format(
+        subreddit_url=subreddit_url, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
+    bot.say(message)
 
 
 def redditor_info(bot, trigger, match=None):
@@ -303,7 +302,7 @@ def reddit_slash_info(bot, trigger):
     searchtype = trigger.group(1)
     match = trigger.group(2)
     if searchtype == "r":
-        return subreddit_info(bot, trigger, match, "check")
+        return subreddit_info(bot, trigger, match)
     elif searchtype == "u":
         return redditor_info(bot, trigger, match)
 
@@ -330,4 +329,4 @@ def redditor_command(bot, trigger):
 
     # Redditor names do not contain spaces
     match = trigger.group(3)
-    return redditor_info(bot, trigger, match, "check")
+    return redditor_info(bot, trigger, match)
