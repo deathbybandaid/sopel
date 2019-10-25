@@ -207,7 +207,7 @@ def auto_redditor_info(bot, trigger, match):
 
 
 @url(subreddit_url)
-def auto_subreddit_info(bot, trigger):
+def auto_subreddit_info(bot, trigger, match):
     match = str(trigger).split("/")[-1]
     subreddit_info(bot, trigger, match)
 
