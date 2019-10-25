@@ -139,18 +139,17 @@ def subreddit_info(bot, trigger, match, subcommand):
                    'Created at {created}')
 
         link = subreddit_url
-        if s.over18:
-            nsfw = ''
-            if s.over_18:
-                nsfw += ' ' + bold(color('[NSFW]', colors.RED))
+        nsfw = ''
+        if s.over_18:
+            nsfw += ' ' + bold(color('[NSFW]', colors.RED))
 
-                sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
-                if sfw:
-                    link = '(link hidden)'
-                    bot.kick(
-                        trigger.nick, trigger.sender,
-                        'Linking to NSFW content in a SFW channel.'
-                    )
+            sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
+            if sfw:
+                link = '(link hidden)'
+                bot.kick(
+                    trigger.nick, trigger.sender,
+                    'Linking to NSFW content in a SFW channel.'
+                )
 
         message = message.format(
             title=subreddit_name, link=link, nsfw=nsfw, subscribers=s.subscribers, created=s.created_utc)
