@@ -36,6 +36,7 @@ else:
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
 post_url = r'%s/r/.*?/comments/([\w-]+)' % domain
 short_post_url = r'https?://redd.it/([\w-]+)'
+sub_url = r'%s/r)?/([\w-]+)' % domain
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
 
 
@@ -199,10 +200,14 @@ def redditor_info(bot, trigger, match, commanded=False):
         return NOLIMIT
 
 
-# If you change the groups here, you'll have to change some things above.
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
     redditor_info(bot, trigger, match.group(2))
+
+
+@url(sub_url)
+def auto_subreddit_info(bot, trigger, match):
+    subreddit_info(bot, trigger, match.group(2))
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
