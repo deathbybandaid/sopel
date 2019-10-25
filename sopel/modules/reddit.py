@@ -134,8 +134,6 @@ def subreddit_info(bot, trigger, match, subcommand):
         return bot.say("Invalid subreddit command.")
 
     if subcommand == 'check':
-        bot.say(subreddit_name)
-        return
         message = ('[REDDIT] {title} {link}{nsfw} | {subscribers} points ({percent}) | '
                    '{comments} comments | Posted by {author} | '
                    'Created at {created}')
