@@ -113,17 +113,6 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
-@commands('subreddit')
-@example('.subreddit plex')
-def subreddit_command(bot, trigger):
-    # require input
-    if not trigger.group(2):
-        return bot.reply('You must provide a subreddit name.')
-
-    match = trigger.group(3)
-    return subreddit_info(bot, trigger, match)
-
-
 def subreddit_info(bot, trigger, match):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
@@ -139,9 +128,31 @@ def subreddit_info(bot, trigger, match):
     bot.say(str(subreddit))
 
 
+@commands('subreddit')
+@example('.subreddit plex')
+def subreddit_command(bot, trigger):
+    # require input
+    if not trigger.group(2):
+        return bot.reply('You must provide a subreddit name.')
+
+    # subreddit names do not contain spaces
+    match = trigger.group(3)
+    return subreddit_info(bot, trigger, match)
+
+
 # If you change this, you'll have to change some other things...
 @commands('redditor')
 @example('.redditor poem_for_your_sprog')
+def redditor_command(bot, trigger):
+    # require input
+    if not trigger.group(2):
+        return bot.reply('You must provide a Redditor name.')
+
+    # Redditor names do not contain spaces
+    match = trigger.group(3)
+    return redditor_info(bot, trigger, match)
+
+
 def redditor_info(bot, trigger, match=None):
     """Shows information about the given Redditor"""
     commanded = re.match(bot.config.core.prefix + 'redditor', trigger)
