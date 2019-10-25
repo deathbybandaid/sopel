@@ -208,8 +208,7 @@ def auto_redditor_info(bot, trigger, match):
 
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
-    return bot.say(str(trigger).split("/")[-1])
-    subreddit_info(bot, trigger, match.group(2))
+    subreddit_info(bot, trigger, str(trigger).split("/")[-1])
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
