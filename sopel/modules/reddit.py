@@ -134,6 +134,17 @@ def subreddit_info(bot, trigger, match, is_command=False):
             bot.say('No such subreddit.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
+
+    try:
+        r.subreddit(match).subreddit_type
+    except Exception as e:
+        if str(e) == "received 403 HTTP response":
+            bot.say(match + " appears to be an private subreddit!")
+            return NOLIMIT
+        elif str(e) == "received 404 HTTP response":
+            bot.say(match + " appears to be an banned subreddit!")
+            return NOLIMIT
+
     s = r.subreddit(match)
     link = "https://www.reddit.com/r/" + s.display_name
 
