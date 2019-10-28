@@ -138,10 +138,10 @@ def subreddit_info(bot, trigger, match, is_command=False):
     try:
         r.subreddit(match).subreddit_type
     except prawcore.exceptions.Forbidden:
-        bot.say(match + " appears to be a private subreddit!")
+        bot.say("r/" + match + " appears to be a private subreddit!")
         return NOLIMIT
     except prawcore.exceptions.NotFound:
-        bot.say(match + " appears to be a banned subreddit!")
+        bot.say("r/" + match + " appears to be a banned subreddit!")
         return NOLIMIT
 
     s = r.subreddit(match)
