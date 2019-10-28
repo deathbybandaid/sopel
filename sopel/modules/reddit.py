@@ -136,7 +136,8 @@ def subreddit_info(bot, trigger, match, is_command=False):
     created = time.format_time(bot.db, bot.config, tz, trigger.nick,
                                trigger.sender, time_created)
 
-    message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
+    message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | '
+               'Created at {created} | {public_description}')
 
     nsfw = ''
     if s.over18:
