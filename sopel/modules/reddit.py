@@ -153,7 +153,7 @@ def subreddit_info(bot, trigger, match, is_command=False):
             )
 
     message = message.format(
-        link=link, nsfw=nsfw, subscribers='{:,d}'.format(s.subscribers),
+        link=link, nsfw=nsfw, subscribers='{:,}'.format(s.subscribers),
         created=created, public_description=s.public_description)
     bot.say(message)
 
