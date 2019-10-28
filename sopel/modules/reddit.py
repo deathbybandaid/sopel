@@ -40,6 +40,15 @@ short_post_url = r'https?://redd.it/([\w-]+)'
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
 
 
+def get_time_created(bot, trigger, subtime):
+    tz = time.get_timezone(
+        bot.db, bot.config, None, trigger.nick, trigger.sender)
+    time_created = dt.datetime.utcfromtimestamp(subtime)
+    created = time.format_time(
+                bot.db, bot.config, tz, trigger.nick, trigger.sender, time_created)
+    return created
+
+
 @url(post_url)
 @url(short_post_url)
 def rpost_info(bot, trigger, match):
@@ -89,11 +98,7 @@ def rpost_info(bot, trigger, match):
         else:
             author = '[deleted]'
 
-        tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
-                               trigger.sender)
-        time_created = dt.datetime.utcfromtimestamp(s.created_utc)
-        created = time.format_time(bot.db, bot.config, tz, trigger.nick,
-                                   trigger.sender, time_created)
+        created = get_time_created(bot, trigger, s.created_utc)
 
         if s.score > 0:
             point_color = colors.GREEN
@@ -130,11 +135,7 @@ def subreddit_info(bot, trigger, match, is_command=False):
     s = r.subreddit(match)
     link = "https://www.reddit.com/r/" + s.display_name
 
-    tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
-                           trigger.sender)
-    time_created = dt.datetime.utcfromtimestamp(s.created_utc)
-    created = time.format_time(bot.db, bot.config, tz, trigger.nick,
-                               trigger.sender, time_created)
+    created = get_time_created(bot, trigger, s.created_utc)
 
     message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | '
                'Created at {created} | {public_description}')
