@@ -306,8 +306,8 @@ def get_channel_spoiler_free(bot, trigger):
 
 @rule(r'^(?P<prefix>r|u)\/(?P<id>[a-zA-Z-_]+)')
 def reddit_slash_info(bot, trigger):
-    searchtype = trigger.group(1)
-    match = trigger.group(2)
+    searchtype = trigger.group('prefix')
+    match = trigger.group('id')
     if searchtype == "r":
         return subreddit_info(bot, trigger, match, commanded=True)
     elif searchtype == "u":
