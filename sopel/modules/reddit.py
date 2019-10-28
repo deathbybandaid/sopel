@@ -137,7 +137,7 @@ def subreddit_info(bot, trigger, match, is_command=False):
 
     created = get_time_created(bot, trigger, s.created_utc)
 
-    message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | '
+    message = ('[REDDIT] {link}{nsfw} | {subscribers} subscribers | '
                'Created at {created} | {public_description}')
 
     nsfw = ''
