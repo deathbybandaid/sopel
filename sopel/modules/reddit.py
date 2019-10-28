@@ -135,6 +135,8 @@ def subreddit_info(bot, trigger, match, is_command=False):
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
 
+    r.subreddit(match).subreddit_type
+
     try:
         r.subreddit(match).subreddit_type
     except Exception as e:
