@@ -138,6 +138,7 @@ def subreddit_info(bot, trigger, match, is_command=False):
     try:
         r.subreddit(match).subreddit_type
     except Exception as e:
+        bot.say(str(e))
         if str(e) == "received 403 HTTP response":
             bot.say(match + " appears to be an private subreddit!")
             return NOLIMIT
