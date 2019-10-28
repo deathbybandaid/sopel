@@ -113,7 +113,7 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
-def subreddit_info(bot, trigger, match, commanded=False):
+def subreddit_info(bot, trigger, match, is_command=False):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
         user_agent=USER_AGENT,
@@ -122,40 +122,40 @@ def subreddit_info(bot, trigger, match, commanded=False):
     )
     try:
         r.subreddits.search_by_name(match, exact=True)
-        s = r.subreddit(match)
-        link = "https://www.reddit.com/r/" + s.display_name
-
-        tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
-                               trigger.sender)
-        time_created = dt.datetime.utcfromtimestamp(s.created_utc)
-        created = time.format_time(bot.db, bot.config, tz, trigger.nick,
-                                   trigger.sender, time_created)
-
-        message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
-
-        nsfw = ''
-        if s.over18:
-            nsfw += ' ' + bold(color('[NSFW]', colors.RED))
-
-            sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
-            if sfw:
-                link = '(link hidden)'
-                bot.kick(
-                    trigger.nick, trigger.sender,
-                    'Linking to NSFW content in a SFW channel.'
-                )
-
-        message = message.format(
-            link=link, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
-        bot.say(message)
     except prawcore.exceptions.NotFound:
-        if commanded:
+        if is_command:
             bot.say('No such subreddit.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
+    s = r.subreddit(match)
+    link = "https://www.reddit.com/r/" + s.display_name
+
+    tz = time.get_timezone(bot.db, bot.config, None, trigger.nick,
+                           trigger.sender)
+    time_created = dt.datetime.utcfromtimestamp(s.created_utc)
+    created = time.format_time(bot.db, bot.config, tz, trigger.nick,
+                               trigger.sender, time_created)
+
+    message = ('[REDDIT] {link}{nsfw} | subscribers ({subscribers}) | Created at {created} | {public_description}')
+
+    nsfw = ''
+    if s.over18:
+        nsfw += ' ' + bold(color('[NSFW]', colors.RED))
+
+        sfw = bot.db.get_channel_value(trigger.sender, 'sfw')
+        if sfw:
+            link = '(link hidden)'
+            bot.kick(
+                trigger.nick, trigger.sender,
+                'Linking to NSFW content in a SFW channel.'
+            )
+
+    message = message.format(
+        link=link, nsfw=nsfw, subscribers=s.subscribers, created=created, public_description=s.public_description)
+    bot.say(message)
 
 
-def redditor_info(bot, trigger, match, commanded=False):
+def redditor_info(bot, trigger, match, is_command=False):
     """Shows information about the given Redditor"""
 
     r = praw.Reddit(
@@ -183,7 +183,7 @@ def redditor_info(bot, trigger, match, commanded=False):
 
         if is_cakeday:
             message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
-        if commanded:
+        if is_command:
             message = message + ' | https://reddit.com/u/' + u.name
         if u.is_gold:
             message = message + ' | ' + bold(color('Gold', colors.YELLOW))
@@ -194,7 +194,7 @@ def redditor_info(bot, trigger, match, commanded=False):
 
         bot.say(message)
     except prawcore.exceptions.NotFound:
-        if commanded:
+        if is_command:
             bot.say('No such Redditor.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
@@ -309,9 +309,9 @@ def reddit_slash_info(bot, trigger):
     searchtype = trigger.group('prefix')
     match = trigger.group('id')
     if searchtype == "r":
-        return subreddit_info(bot, trigger, match, commanded=True)
+        return subreddit_info(bot, trigger, match, is_command=True)
     elif searchtype == "u":
-        return redditor_info(bot, trigger, match, commanded=True)
+        return redditor_info(bot, trigger, match, is_command=True)
 
 
 @commands('subreddit')
@@ -323,7 +323,7 @@ def subreddit_command(bot, trigger):
 
     # subreddit names do not contain spaces
     match = trigger.group(3)
-    return subreddit_info(bot, trigger, match, commanded=True)
+    return subreddit_info(bot, trigger, match, is_command=True)
 
 
 # If you change this, you'll have to change some other things...
@@ -336,4 +336,4 @@ def redditor_command(bot, trigger):
 
     # Redditor names do not contain spaces
     match = trigger.group(3)
-    return redditor_info(bot, trigger, match, commanded=True)
+    return redditor_info(bot, trigger, match, is_command=True)
