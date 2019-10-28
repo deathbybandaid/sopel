@@ -44,8 +44,10 @@ def get_time_created(bot, trigger, subtime):
     tz = time.get_timezone(
         bot.db, bot.config, None, trigger.nick, trigger.sender)
     time_created = dt.datetime.utcfromtimestamp(subtime)
-    created = time.format_time(
-                bot.db, bot.config, tz, trigger.nick, trigger.sender, time_created)
+    created = time.format_time(bot.db,
+                               bot.config, tz,
+                               trigger.nick, trigger.sender,
+                               time_created)
     return created
 
 
