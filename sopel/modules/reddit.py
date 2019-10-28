@@ -16,7 +16,7 @@ import praw
 import prawcore
 
 from sopel.formatting import bold, color, colors
-from sopel.module import commands, example, require_chanmsg, url, NOLIMIT, OP, rule
+from sopel.module import commands, example, require_chanmsg, rule, url, NOLIMIT, OP
 from sopel.tools import time
 from sopel.tools.web import USER_AGENT
 
