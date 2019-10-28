@@ -135,14 +135,12 @@ def subreddit_info(bot, trigger, match, is_command=False):
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
 
-    r.subreddit(match).subreddit_type
-
     try:
         r.subreddit(match).subreddit_type
     except prawcore.exceptions.Forbidden:
         bot.say(match + " appears to be an private subreddit!")
         return NOLIMIT
-    except prawcore.exceptions.Forbidden:
+    except prawcore.exceptions.NotFound:
         bot.say(match + " appears to be an banned subreddit!")
         return NOLIMIT
 
