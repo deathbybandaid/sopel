@@ -242,6 +242,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
+
     try:
         u = bot.memory['reddit_praw'].redditor(match)
         message = '[REDDITOR] ' + u.name
@@ -381,7 +382,7 @@ def get_channel_spoiler_free(bot, trigger):
         bot.say('%s is flagged as spoilers-allowed' % channel)
 
 
-@rule(r'^(?P<prefix>r|u)\/(?P<id>[a-zA-Z-_]+)')
+@rule(r'^(?P<prefix>r|u)/(?P<id>[a-zA-Z0-9-_]+)')
 def reddit_slash_info(bot, trigger):
     searchtype = trigger.group('prefix')
     match = trigger.group('id')
