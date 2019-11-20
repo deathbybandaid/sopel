@@ -281,13 +281,13 @@ def redditor_info(bot, trigger, match, commanded=False):
 
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
+    bot.say(str(match))
     redditor_info(bot, trigger, match)
 
 
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
     match = str(trigger).split("/")[-1]
-    bot.say(str(match))
     subreddit_info(bot, trigger, match)
 
 
