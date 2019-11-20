@@ -38,7 +38,7 @@ else:
 
 
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
-subreddit_url = r'%s/r/([\w-]+)/?$' % domain
+subreddit_url = r'%s/r?/([\w-]+)' % domain
 post_url = r'%s/r/.*?/comments/([\w-]+)/?$' % domain
 short_post_url = r'https?://redd.it/([\w-]+)'
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
@@ -286,8 +286,7 @@ def auto_redditor_info(bot, trigger, match):
 
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
-    match = str(trigger).split("/")[-1]
-    subreddit_info(bot, trigger, match)
+    subreddit_info(bot, trigger, match.group(1))
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
