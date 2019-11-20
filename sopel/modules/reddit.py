@@ -62,10 +62,10 @@ def shutdown(bot):
     bot.memory.pop('reddit_praw', None)
 
 
-def get_time_created(bot, trigger, entrytime):
+def get_time_created(bot, trigger, subtime):
     tz = time.get_timezone(
         bot.db, bot.config, None, trigger.nick, trigger.sender)
-    time_created = dt.datetime.utcfromtimestamp(entrytime)
+    time_created = dt.datetime.utcfromtimestamp(subtime)
     created = time.format_time(bot.db,
                                bot.config, tz,
                                trigger.nick, trigger.sender,
@@ -193,21 +193,20 @@ def comment_info(bot, trigger, match):
     bot.say(message)
 
 
-def subreddit_info(bot, trigger, match, commanded=False):
+# If you change this, you'll have to change some other things...
+def subreddit_info(bot, trigger, match, is_command=False):
     """Shows information about the given subreddit"""
-
     r = bot.memory['reddit_praw']
     try:
         r.subreddits.search_by_name(match, exact=True)
     except prawcore.exceptions.NotFound:
-        if commanded:
+        if is_command:
             bot.say('No such subreddit.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
 
     try:
-        s = r.subreddit(match)
-        s.subreddit_type
+        r.subreddit(match).subreddit_type
     except prawcore.exceptions.Forbidden:
         bot.say("r/" + match + " appears to be a private subreddit!")
         return NOLIMIT
@@ -215,6 +214,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
         bot.say("r/" + match + " appears to be a banned subreddit!")
         return NOLIMIT
 
+    s = r.subreddit(match)
     link = "https://www.reddit.com/r/" + s.display_name
 
     created = get_time_created(bot, trigger, s.created_utc)
@@ -240,8 +240,9 @@ def subreddit_info(bot, trigger, match, commanded=False):
     bot.say(message)
 
 
-def redditor_info(bot, trigger, match, commanded=False):
+def redditor_info(bot, trigger, match, is_command=False):
     """Shows information about the given Redditor"""
+
     try:
         u = bot.memory['reddit_praw'].redditor(match)
         message = '[REDDITOR] ' + u.name
@@ -262,7 +263,7 @@ def redditor_info(bot, trigger, match, commanded=False):
 
         if is_cakeday:
             message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
-        if commanded:
+        if is_command:
             message = message + ' | https://reddit.com/u/' + u.name
         if u.is_gold:
             message = message + ' | ' + bold(color('Gold', colors.YELLOW))
@@ -273,12 +274,13 @@ def redditor_info(bot, trigger, match, commanded=False):
 
         bot.say(message)
     except prawcore.exceptions.NotFound:
-        if commanded:
+        if is_command:
             bot.say('No such Redditor.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
 
 
+# If you change the groups here, you'll have to change some things above.
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
     redditor_info(bot, trigger, match)
@@ -286,7 +288,8 @@ def auto_redditor_info(bot, trigger, match):
 
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
-    subreddit_info(bot, trigger, match.group(1))
+    match = str(trigger).split("/")[-1]
+    subreddit_info(bot, trigger, match)
 
 
 @require_chanmsg('.setsfw is only permitted in channels')
@@ -381,14 +384,14 @@ def get_channel_spoiler_free(bot, trigger):
         bot.say('%s is flagged as spoilers-allowed' % channel)
 
 
-@rule(r'^(?P<prefix>r|u)/(?P<id>[a-zA-Z0-9-_]+)')
+@rule(r'^(?P<prefix>r|u)\/(?P<id>[a-zA-Z-_]+)')
 def reddit_slash_info(bot, trigger):
     searchtype = trigger.group('prefix')
     match = trigger.group('id')
     if searchtype == "r":
-        return subreddit_info(bot, trigger, match, commanded=True)
+        return subreddit_info(bot, trigger, match, is_command=True)
     elif searchtype == "u":
-        return redditor_info(bot, trigger, match, commanded=True)
+        return redditor_info(bot, trigger, match, is_command=True)
 
 
 @commands('subreddit')
@@ -400,9 +403,10 @@ def subreddit_command(bot, trigger):
 
     # subreddit names do not contain spaces
     match = trigger.group(3)
-    return subreddit_info(bot, trigger, match, commanded=True)
+    return subreddit_info(bot, trigger, match, is_command=True)
 
 
+# If you change this, you'll have to change some other things...
 @commands('redditor')
 @example('.redditor poem_for_your_sprog')
 def redditor_command(bot, trigger):
@@ -412,4 +416,4 @@ def redditor_command(bot, trigger):
 
     # Redditor names do not contain spaces
     match = trigger.group(3)
-    return redditor_info(bot, trigger, match, commanded=True)
+    return redditor_info(bot, trigger, match, is_command=True)
