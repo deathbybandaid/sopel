@@ -279,7 +279,6 @@ def redditor_info(bot, trigger, match, commanded=False):
         return NOLIMIT
 
 
-# If you change the groups here, you'll have to change some things above.
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
     redditor_info(bot, trigger, match)
@@ -288,6 +287,7 @@ def auto_redditor_info(bot, trigger, match):
 @url(subreddit_url)
 def auto_subreddit_info(bot, trigger, match):
     match = str(trigger).split("/")[-1]
+    bot.say(str(match))
     subreddit_info(bot, trigger, match)
 
 
@@ -405,7 +405,6 @@ def subreddit_command(bot, trigger):
     return subreddit_info(bot, trigger, match, commanded=True)
 
 
-# If you change this, you'll have to change some other things...
 @commands('redditor')
 @example('.redditor poem_for_your_sprog')
 def redditor_command(bot, trigger):
