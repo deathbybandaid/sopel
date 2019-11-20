@@ -198,11 +198,7 @@ def comment_info(bot, trigger, match):
 # If you change this, you'll have to change some other things...
 def subreddit_info(bot, trigger, match, is_command=False):
     """Shows information about the given subreddit"""
-    r = praw.Reddit(
-        user_agent=USER_AGENT,
-        client_id='6EiphT6SSQq7FQ',
-        client_secret=None,
-    )
+    r = bot.memory['reddit_praw']
     try:
         r.subreddits.search_by_name(match, exact=True)
     except prawcore.exceptions.NotFound:
