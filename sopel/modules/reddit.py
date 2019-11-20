@@ -3,20 +3,26 @@
 reddit.py - Sopel Reddit Module
 Copyright 2012, Elsie Powell, embolalia.com
 Copyright 2019, dgw, technobabbl.es
+Copyright 2019, deathbybandaid, deathbybandaid.net
 Licensed under the Eiffel Forum License 2.
 
 https://sopel.chat
 """
-from __future__ import unicode_literals, absolute_import, print_function, division
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import datetime as dt
+import re
 import sys
+import textwrap
+
+import requests
 
 import praw
 import prawcore
-
 from sopel.formatting import bold, color, colors
-from sopel.module import commands, example, require_chanmsg, rule, url, NOLIMIT, OP
+from sopel.module import (NOLIMIT, OP, commands, example, require_chanmsg,
+                          rule, url)
 from sopel.tools import time
 from sopel.tools.web import USER_AGENT
 
@@ -35,9 +41,27 @@ else:
 
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
 subreddit_url = r'%s/r?/([\w-]+)' % domain
-post_url = r'%s/r/.*?/comments/([\w-]+)' % domain
+post_url = r'%s/r/.*?/comments/([\w-]+)/?$' % domain
 short_post_url = r'https?://redd.it/([\w-]+)'
 user_url = r'%s/u(ser)?/([\w-]+)' % domain
+comment_url = r'%s/r/.*?/comments/.*?/.*?/([\w-]+)' % domain
+image_url = r'https?://i.redd.it/\S+'
+video_url = r'https?://v.redd.it/([\w-]+)'
+
+
+def setup(bot):
+    if 'reddit_praw' not in bot.memory:
+        # Create a PRAW instance just once, at load time
+        bot.memory['reddit_praw'] = praw.Reddit(
+            user_agent=USER_AGENT,
+            client_id='6EiphT6SSQq7FQ',
+            client_secret=None,
+        )
+
+
+def shutdown(bot):
+    # Clean up shared PRAW instance
+    bot.memory.pop('reddit_praw', None)
 
 
 def get_time_created(bot, trigger, subtime):
@@ -51,17 +75,37 @@ def get_time_created(bot, trigger, subtime):
     return created
 
 
+@url(image_url)
+def image_info(bot, trigger, match):
+    url = match.group(0)
+    results = list(
+        bot.memory['reddit_praw']
+        .subreddit('all')
+        .search('url:{}'.format(url), sort='new')
+    )
+    oldest = results[-1]
+    return say_post_info(bot, trigger, oldest.id)
+
+
+@url(video_url)
+def video_info(bot, trigger, match):
+    # Get the video URL with a cheeky hack
+    url = requests.head(
+        'https://www.reddit.com/video/{}'.format(match.group(1)),
+        timeout=(10.0, 4.0)).headers['Location']
+    return say_post_info(bot, trigger, re.match(post_url, url).group(1))
+
+
 @url(post_url)
 @url(short_post_url)
 def rpost_info(bot, trigger, match):
     match = match or trigger
+    return say_post_info(bot, trigger, match.group(1))
+
+
+def say_post_info(bot, trigger, id_):
     try:
-        r = praw.Reddit(
-            user_agent=USER_AGENT,
-            client_id='6EiphT6SSQq7FQ',
-            client_secret=None,
-        )
-        s = r.submission(id=match.group(1))
+        s = bot.memory['reddit_praw'].submission(id=id_)
 
         message = ('[REDDIT] {title} {link}{nsfw} | {points} points ({percent}) | '
                    '{comments} comments | Posted by {author} | '
@@ -120,6 +164,38 @@ def rpost_info(bot, trigger, match):
         return NOLIMIT
 
 
+@url(comment_url)
+def comment_info(bot, trigger, match):
+    """Shows information about the linked comment"""
+    try:
+        c = bot.memory['reddit_praw'].comment(match.group(1))
+    except prawcore.exceptions.NotFound:
+        bot.say('No such comment.')
+        return NOLIMIT
+
+    message = ('[REDDIT] Comment by {author} | {points} points | '
+               'Posted at {posted} | {comment}')
+
+    if c.author:
+        author = c.author.name
+    else:
+        author = '[deleted]'
+
+    posted = get_time_created(bot, trigger, c.created_utc)
+
+    # stolen from the function I (dgw) wrote for our github plugin
+    lines = [line for line in c.body.splitlines() if line and line[0] != '>']
+    short = textwrap.wrap(lines[0], 250)[0]
+    if len(lines) > 1 or short != lines[0]:
+        short += ' […]'
+
+    message = message.format(
+        author=author, points=c.score, posted=posted, comment=short)
+
+    bot.say(message)
+
+
+# If you change this, you'll have to change some other things...
 def subreddit_info(bot, trigger, match, is_command=False):
     """Shows information about the given subreddit"""
     r = praw.Reddit(
@@ -173,13 +249,8 @@ def subreddit_info(bot, trigger, match, is_command=False):
 def redditor_info(bot, trigger, match, is_command=False):
     """Shows information about the given Redditor"""
 
-    r = praw.Reddit(
-        user_agent=USER_AGENT,
-        client_id='6EiphT6SSQq7FQ',
-        client_secret=None,
-    )
     try:
-        u = r.redditor(match)
+        u = bot.memory['reddit_praw'].redditor(match)
         message = '[REDDITOR] ' + u.name
         now = dt.datetime.utcnow()
         cakeday_start = dt.datetime.utcfromtimestamp(u.created_utc)
@@ -218,7 +289,7 @@ def redditor_info(bot, trigger, match, is_command=False):
 # If you change the groups here, you'll have to change some things above.
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
-    redditor_info(bot, trigger, match.group(2))
+    redditor_info(bot, trigger, match)
 
 
 @url(subreddit_url)
