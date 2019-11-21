@@ -196,14 +196,11 @@ def comment_info(bot, trigger, match):
 def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
     if match.lower() == 'all':
-        if commanded:
-            message = ('[REDDIT] https://www.reddit.com/r/all'
-                       ' ' + bold(color('[NSFW]', colors.RED)) + ' | '
-                       'Today\'s top content from hundreds of thousands '
-                       'of Reddit communities.')
-            bot.say(message)
-        # Fail silently if it wasn't an explicit command.
-        return NOLIMIT
+        message = ('[REDDIT] https://www.reddit.com/r/all'
+                   ' ' + bold(color('[NSFW]', colors.RED)) + ' | '
+                   'Today\'s top content from hundreds of thousands '
+                   'of Reddit communities.')
+        bot.say(message)
 
     r = bot.memory['reddit_praw']
     try:
