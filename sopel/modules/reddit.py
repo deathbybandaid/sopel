@@ -201,7 +201,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
                    'Today\'s top content from hundreds of thousands '
                    'of Reddit communities.')
         bot.say(message)
-        return
+        return NOLIMIT
 
     r = bot.memory['reddit_praw']
     try:
