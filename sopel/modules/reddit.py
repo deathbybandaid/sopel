@@ -392,7 +392,7 @@ def get_channel_spoiler_free(bot, trigger):
 def reddit_slash_info(bot, trigger):
     searchtype = trigger.group('prefix')
     match = trigger.group('id')
-    bot.say(str(trigger.args))
+    bot.say(str(trigger.group(2)))
     if searchtype == "r":
         return subreddit_info(bot, trigger, match, commanded=True)
     elif searchtype == "u":
