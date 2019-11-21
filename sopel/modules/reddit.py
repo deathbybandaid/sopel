@@ -195,6 +195,14 @@ def comment_info(bot, trigger, match):
 
 def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
+    if match.lower() == 'all':
+        if commanded:
+            message = ('[REDDIT] "https://www.reddit.com/r/all" | '
+                       'Today\'s top content from hundreds of thousands '
+                       'of Reddit communities.')
+            bot.say(message)
+        # Fail silently if it wasn't an explicit command.
+        return NOLIMIT
 
     r = bot.memory['reddit_praw']
     try:
@@ -242,7 +250,6 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
-
     try:
         u = bot.memory['reddit_praw'].redditor(match)
         message = '[REDDITOR] ' + u.name
