@@ -197,7 +197,8 @@ def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
     if match.lower() == 'all':
         if commanded:
-            message = ('[REDDIT] https://www.reddit.com/r/all | '
+            message = ('[REDDIT] https://www.reddit.com/r/all'
+                       ' ' + bold(color('[NSFW]', colors.RED)) + ' | '
                        'Today\'s top content from hundreds of thousands '
                        'of Reddit communities.')
             bot.say(message)
