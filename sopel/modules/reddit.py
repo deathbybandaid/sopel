@@ -388,7 +388,7 @@ def get_channel_spoiler_free(bot, trigger):
         bot.say('%s is flagged as spoilers-allowed' % channel)
 
 
-@rule(r'.*\b(?P<prefix>r|u)/(?P<id>[a-zA-Z0-9-_]+)(?(\S+))?\b.*')
+@rule(r'.*\b(?P<prefix>r|u)/(?P<id>[a-zA-Z0-9-_]+)\b.*')
 def reddit_slash_info(bot, trigger):
     searchtype = trigger.group('prefix')
     match = trigger.group('id')
