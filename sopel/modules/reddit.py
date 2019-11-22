@@ -195,11 +195,19 @@ def comment_info(bot, trigger, match):
 
 def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
-    if match.lower() == 'all':
-        message = ('[REDDIT] https://www.reddit.com/r/all'
-                   ' ' + bold(color('[NSFW]', colors.RED)) + ' | '
-                   'Today\'s top content from hundreds of thousands '
-                   'of Reddit communities.')
+    if match.lower() in ['all', 'popular']:
+        message = ('[REDDIT] {link}{nsfw} | {public_description}')
+        nsfw = ' ' + bold(color('[NSFW]', colors.RED))
+        link = "https://www.reddit.com/r/" + match.lower()
+        public_description = ''
+        if match.lower() == 'all':
+            public_description = ('Today\'s top content from hundreds of '
+                                  'thousands of Reddit communities.')
+        elif match.lower() == 'popular':
+            public_description = ('The top trending content from some of '
+                                  'Reddit\'s most popular communities')
+        message = message.format(
+            link=link, nsfw=nsfw, public_description=public_description)
         bot.say(message)
         return NOLIMIT
 
