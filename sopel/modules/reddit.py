@@ -198,7 +198,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
     if match.lower() in ['all', 'popular']:
         message = ('[REDDIT] {link}{nsfw} | {public_description}')
         nsfw = ' ' + bold(color('[NSFW]', colors.RED))
-        link = "https://www.reddit.com/r/" + match.lower()
+        link = "https://reddit.com/r/" + match.lower()
         public_description = ''
         if match.lower() == 'all':
             public_description = ('Today\'s top content from hundreds of '
@@ -230,7 +230,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
         bot.say("r/" + match + " appears to be a banned subreddit!")
         return NOLIMIT
 
-    link = "https://www.reddit.com/r/" + s.display_name
+    link = "https://reddit.com/r/" + s.display_name
 
     created = get_time_created(bot, trigger, s.created_utc)
 
@@ -398,7 +398,7 @@ def get_channel_spoiler_free(bot, trigger):
 
 @rule(r'(?i)(?<!\S)\/?(?P<prefix>r|u)\/(?P<id>[a-zA-Z0-9-_]+)\b')
 def reddit_slash_info(bot, trigger):
-    searchtype = trigger.group('prefix')
+    searchtype = trigger.group('prefix').lower()
     match = trigger.group('id')
     if searchtype == "r":
         return subreddit_info(bot, trigger, match, commanded=True)
