@@ -282,23 +282,12 @@ def redditor_info(bot, trigger, match, commanded=False):
 
     try:
         u = bot.memory['reddit_praw'].redditor(match)
+        u.id
     except prawcore.exceptions.NotFound:
         if commanded:
             bot.say('No such Redditor.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
-
-    bot.say(str(u.id))
-
-    # r = bot.memory['reddit_praw']
-    """try:
-        if getattr(r.redditor(match), 'is_suspended', False):
-            bot.say("account is suspended")
-    except prawcore.exceptions.NotFound:
-        if r.redditor(match).is_username_available(match):
-            bot.say("account doesn't exist")
-        else:
-            bot.say("account is deleted or shadowbanned for spam")"""
 
     message = '[REDDITOR] ' + u.name
     is_cakeday = get_is_cakeday(u.created_utc)
