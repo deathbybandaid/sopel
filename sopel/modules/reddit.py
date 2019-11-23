@@ -39,12 +39,12 @@ else:
 
 domain = r'https?://(?:www\.|old\.|pay\.|ssl\.|[a-z]{2}\.)?reddit\.com'
 subreddit_url = r'%s/r/([\w-]+)/?$' % domain
-post_url = r'%s/r/.*?/comments/([\w-]+)/?$' % domain
-short_post_url = r'https?://redd.it/([\w-]+)'
-user_url = r'%s/u(ser)?/([\w-]+)' % domain
-comment_url = r'%s/r/.*?/comments/.*?/.*?/([\w-]+)' % domain
-image_url = r'https?://i.redd.it/\S+'
-video_url = r'https?://v.redd.it/([\w-]+)'
+post_url = r'%s/r/\S+?/comments/([\w-]+)(?:/[\w]+)?/?$' % domain
+short_post_url = r'https?://redd\.it/([\w-]+)'
+user_url = r'%s/u(?:ser)?/([\w-]+)' % domain
+comment_url = r'%s/r/\S+?/comments/\S+?/\S+?/([\w-]+)' % domain
+image_url = r'https?://i\.redd\.it/\S+'
+video_url = r'https?://v\.redd\.it/([\w-]+)'
 
 
 def setup(bot):
@@ -73,6 +73,24 @@ def get_time_created(bot, trigger, entrytime):
     return created
 
 
+def get_is_cakeday(entrytime):
+    now = dt.datetime.utcnow()
+    cakeday_start = dt.datetime.utcfromtimestamp(entrytime)
+    cakeday_start = cakeday_start.replace(year=now.year)
+    day = dt.timedelta(days=1)
+    year_div_by_400 = now.year % 400 == 0
+    year_div_by_100 = now.year % 100 == 0
+    year_div_by_4 = now.year % 4 == 0
+    is_leap = year_div_by_400 or ((not year_div_by_100) and year_div_by_4)
+    if (not is_leap) and ((cakeday_start.month, cakeday_start.day) == (2, 29)):
+        # If cake day is 2/29 and it's not a leap year, cake day is 3/1.
+        # Cake day begins at exact account creation time.
+        is_cakeday = cakeday_start + day <= now <= cakeday_start + (2 * day)
+    else:
+        is_cakeday = cakeday_start <= now <= cakeday_start + day
+    return is_cakeday
+
+
 @url(image_url)
 def image_info(bot, trigger, match):
     url = match.group(0)
@@ -91,7 +109,11 @@ def video_info(bot, trigger, match):
     url = requests.head(
         'https://www.reddit.com/video/{}'.format(match.group(1)),
         timeout=(10.0, 4.0)).headers['Location']
-    return say_post_info(bot, trigger, re.match(post_url, url).group(1))
+    try:
+        return say_post_info(bot, trigger, re.match(post_url, url).group(1))
+    except AttributeError:
+        # Fail silently if we can't map the video link to a submission
+        pass
 
 
 @url(post_url)
@@ -195,6 +217,22 @@ def comment_info(bot, trigger, match):
 
 def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
+    if match.lower() in ['all', 'popular']:
+        message = ('[REDDIT] {link}{nsfw} | {public_description}')
+        nsfw = ' ' + bold(color('[Possible NSFW]', colors.ORANGE))
+        link = "https://reddit.com/r/" + match.lower()
+        public_description = ''
+        if match.lower() == 'all':
+            public_description = ('Today\'s top content from hundreds of '
+                                  'thousands of Reddit communities.')
+        elif match.lower() == 'popular':
+            public_description = ('The top trending content from some of '
+                                  'Reddit\'s most popular communities')
+        message = message.format(
+            link=link, nsfw=nsfw, public_description=public_description)
+        bot.say(message)
+        return NOLIMIT
+
     r = bot.memory['reddit_praw']
     try:
         r.subreddits.search_by_name(match, exact=True)
@@ -241,46 +279,36 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
+
     try:
         u = bot.memory['reddit_praw'].redditor(match)
-        message = '[REDDITOR] ' + u.name
-        now = dt.datetime.utcnow()
-        cakeday_start = dt.datetime.utcfromtimestamp(u.created_utc)
-        cakeday_start = cakeday_start.replace(year=now.year)
-        day = dt.timedelta(days=1)
-        year_div_by_400 = now.year % 400 == 0
-        year_div_by_100 = now.year % 100 == 0
-        year_div_by_4 = now.year % 4 == 0
-        is_leap = year_div_by_400 or ((not year_div_by_100) and year_div_by_4)
-        if (not is_leap) and ((cakeday_start.month, cakeday_start.day) == (2, 29)):
-            # If cake day is 2/29 and it's not a leap year, cake day is 3/1.
-            # Cake day begins at exact account creation time.
-            is_cakeday = cakeday_start + day <= now <= cakeday_start + (2 * day)
-        else:
-            is_cakeday = cakeday_start <= now <= cakeday_start + day
-
-        if is_cakeday:
-            message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
-        if commanded:
-            message = message + ' | https://reddit.com/u/' + u.name
-        if u.is_gold:
-            message = message + ' | ' + bold(color('Gold', colors.YELLOW))
-        if u.is_mod:
-            message = message + ' | ' + bold(color('Mod', colors.GREEN))
-        message = message + (' | Link: ' + str(u.link_karma) +
-                             ' | Comment: ' + str(u.comment_karma))
-
-        bot.say(message)
+        u.id
     except prawcore.exceptions.NotFound:
         if commanded:
             bot.say('No such Redditor.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
 
+    message = '[REDDITOR] ' + u.name
+    is_cakeday = get_is_cakeday(u.created_utc)
+
+    if is_cakeday:
+        message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
+    if commanded:
+        message = message + ' | https://reddit.com/u/' + u.name
+    if u.is_gold:
+        message = message + ' | ' + bold(color('Gold', colors.YELLOW))
+    if u.is_mod:
+        message = message + ' | ' + bold(color('Mod', colors.GREEN))
+    message = message + (' | Link: ' + str(u.link_karma) +
+                         ' | Comment: ' + str(u.comment_karma))
+
+    bot.say(message)
+
 
 @url(user_url)
 def auto_redditor_info(bot, trigger, match):
-    redditor_info(bot, trigger, match.group(2))
+    redditor_info(bot, trigger, match.group(1))
 
 
 @url(subreddit_url)
