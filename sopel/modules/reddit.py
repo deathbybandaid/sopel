@@ -263,6 +263,7 @@ def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
     r = bot.memory['reddit_praw']
     try:
+        bot.say(str(dir(r.redditor(match))))
         if getattr(r.redditor(match), 'is_suspended', False):
             bot.say("account is suspended")
     except prawcore.exceptions.NotFound:
