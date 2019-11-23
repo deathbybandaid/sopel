@@ -280,14 +280,6 @@ def subreddit_info(bot, trigger, match, commanded=False):
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
 
-    redditor = bot.memory['reddit_praw'].redditor(match)
-    if hasattr(redditor, 'fullname'):
-        bot.say("alive")
-    elif hasattr(redditor, 'is_suspended'):
-        bot.say("suspended")
-    else:
-        bot.say("shadowbanned")
-
     try:
         u = bot.memory['reddit_praw'].redditor(match)
     except prawcore.exceptions.NotFound:
@@ -295,6 +287,8 @@ def redditor_info(bot, trigger, match, commanded=False):
             bot.say('No such Redditor.')
         # Fail silently if it wasn't an explicit command.
         return NOLIMIT
+
+    bot.say(str(u.id))
 
     # r = bot.memory['reddit_praw']
     """try:
