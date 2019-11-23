@@ -219,7 +219,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
     if match.lower() in ['all', 'popular']:
         message = ('[REDDIT] {link}{nsfw} | {public_description}')
-        nsfw = ' ' + bold(color('[Possible NSFW]', colors.YELLOW))
+        nsfw = ' ' + bold(color('[Possible NSFW]', colors.ORANGE))
         link = "https://reddit.com/r/" + match.lower()
         public_description = ''
         if match.lower() == 'all':
@@ -280,9 +280,16 @@ def subreddit_info(bot, trigger, match, commanded=False):
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
 
+    redditor = bot.memory['reddit_praw'].redditor(match)
+    if hasattr(redditor, 'fullname'):
+        bot.say("alive")
+    elif hasattr(redditor, 'is_suspended'):
+        bot.say("suspended")
+    else:
+        bot.say("shadowbanned")
+
     try:
         u = bot.memory['reddit_praw'].redditor(match)
-        bot.say(str(vars(u)))
     except prawcore.exceptions.NotFound:
         if commanded:
             bot.say('No such Redditor.')
@@ -299,7 +306,6 @@ def redditor_info(bot, trigger, match, commanded=False):
         else:
             bot.say("account is deleted or shadowbanned for spam")"""
 
-    u = bot.memory['reddit_praw'].redditor(match)
     message = '[REDDITOR] ' + u.name
     is_cakeday = get_is_cakeday(u.created_utc)
 
