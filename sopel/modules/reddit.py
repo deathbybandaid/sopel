@@ -266,7 +266,7 @@ def redditor_info(bot, trigger, match, commanded=False):
         if getattr(r.redditor(match), 'is_suspended', False):
             bot.say("account is suspended")
     except prawcore.exceptions.NotFound:
-        if r.is_username_available(match):
+        if r.redditor(match).is_username_available(match):
             bot.say("account doesn't exist")
         else:
             bot.say("account is deleted or shadowbanned for spam")
