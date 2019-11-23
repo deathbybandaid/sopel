@@ -201,7 +201,7 @@ def subreddit_info(bot, trigger, match, commanded=False):
     """Shows information about the given subreddit"""
     if match.lower() in ['all', 'popular']:
         message = ('[REDDIT] {link}{nsfw} | {public_description}')
-        nsfw = ' ' + bold(color('[NSFW]', colors.RED))
+        nsfw = ' ' + bold(color('[ Possible NSFW]', colors.YELLOW))
         link = "https://reddit.com/r/" + match.lower()
         public_description = ''
         if match.lower() == 'all':
@@ -261,6 +261,18 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 def redditor_info(bot, trigger, match, commanded=False):
     """Shows information about the given Redditor"""
+    r = bot.memory['reddit_praw']
+    try:
+        if getattr(r.get_redditor(match), 'is_suspended', False):
+            bot.say("account is suspended")
+    except prawcore.exceptions.NotFound:
+        if r.is_username_available(match):
+            bot.say("account doesn't exist")
+        else:
+            bot.say("account is deleted or shadowbanned for spam")
+    else:
+        bot.say("account exists")
+
     try:
         u = bot.memory['reddit_praw'].redditor(match)
         message = '[REDDITOR] ' + u.name
