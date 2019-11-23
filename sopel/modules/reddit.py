@@ -299,28 +299,22 @@ def redditor_info(bot, trigger, match, commanded=False):
         else:
             bot.say("account is deleted or shadowbanned for spam")"""
 
-    try:
-        u = bot.memory['reddit_praw'].redditor(match)
-        message = '[REDDITOR] ' + u.name
-        is_cakeday = get_is_cakeday(u.created_utc)
+    u = bot.memory['reddit_praw'].redditor(match)
+    message = '[REDDITOR] ' + u.name
+    is_cakeday = get_is_cakeday(u.created_utc)
 
-        if is_cakeday:
-            message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
-        if commanded:
-            message = message + ' | https://reddit.com/u/' + u.name
-        if u.is_gold:
-            message = message + ' | ' + bold(color('Gold', colors.YELLOW))
-        if u.is_mod:
-            message = message + ' | ' + bold(color('Mod', colors.GREEN))
-        message = message + (' | Link: ' + str(u.link_karma) +
-                             ' | Comment: ' + str(u.comment_karma))
+    if is_cakeday:
+        message = message + ' | ' + bold(color('Cake day', colors.LIGHT_PURPLE))
+    if commanded:
+        message = message + ' | https://reddit.com/u/' + u.name
+    if u.is_gold:
+        message = message + ' | ' + bold(color('Gold', colors.YELLOW))
+    if u.is_mod:
+        message = message + ' | ' + bold(color('Mod', colors.GREEN))
+    message = message + (' | Link: ' + str(u.link_karma) +
+                         ' | Comment: ' + str(u.comment_karma))
 
-        bot.say(message)
-    except prawcore.exceptions.NotFound:
-        if commanded:
-            bot.say('No such Redditor.')
-        # Fail silently if it wasn't an explicit command.
-        return NOLIMIT
+    bot.say(message)
 
 
 @url(user_url)
