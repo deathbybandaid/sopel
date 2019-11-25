@@ -282,9 +282,6 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 
 def redditor_info(bot, trigger, match, commanded=False):
-    reddit = bot.memory['reddit_praw']
-    for redditor in reddit.redditors.new(limit=5):
-        bot.say(redditor)
     """Shows information about the given Redditor"""
     try:
         u = bot.memory['reddit_praw'].redditor(match)
@@ -304,6 +301,8 @@ def redditor_info(bot, trigger, match, commanded=False):
         message = message + ' | https://reddit.com/u/' + u.name
     if u.is_gold:
         message = message + ' | ' + bold(color('Gold', colors.YELLOW))
+    if u.is_employee:
+        message = message + ' | ' + bold(color('Employee', colors.PURPLE))
     if u.is_mod:
         message = message + ' | ' + bold(color('Mod', colors.GREEN))
     message = message + (' | Link: ' + str(u.link_karma) +
