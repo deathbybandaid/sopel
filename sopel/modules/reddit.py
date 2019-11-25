@@ -282,7 +282,9 @@ def subreddit_info(bot, trigger, match, commanded=False):
 
 
 def redditor_info(bot, trigger, match, commanded=False):
-    bot.say(str(bot.memory['reddit_praw'].reddit.redditors.new(limit=None)))
+    reddit = bot.memory['reddit_praw']
+    for redditor in reddit.redditors.new(limit=5):
+        bot.say(redditor)
     """Shows information about the given Redditor"""
     try:
         u = bot.memory['reddit_praw'].redditor(match)
