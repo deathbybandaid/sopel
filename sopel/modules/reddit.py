@@ -302,7 +302,7 @@ def redditor_info(bot, trigger, match, commanded=False):
     if u.is_gold:
         message = message + ' | ' + bold(color('Gold', colors.YELLOW))
     if u.is_employee:
-        message = message + ' | ' + bold(color('Employee', colors.PURPLE))
+        message = message + ' | ' + bold(color('Employee', colors.RED))
     if u.is_mod:
         message = message + ' | ' + bold(color('Mod', colors.GREEN))
     message = message + (' | Link: ' + str(u.link_karma) +
